@@ -1,0 +1,879 @@
+# Comment Tracker & Analytics — Development Specification
+
+## 1. Project Overview
+
+### 1.1 Purpose
+
+A local DB-backed tool that accumulates client comment history across all projects, provides pattern analysis, tracks improvement trends, and connects to Lessons & Learned (L&L) workflows. The tool receives structured comment data (formatted by a Claude skill from raw client comment files) and stores, queries, and reports on it.
+
+### 1.2 Problem Statement
+
+- Client comments are managed per-project in isolated Excel files — no cross-project visibility.
+- Recurring comment patterns (e.g., "Figure resolution too low") appear across projects without systematic detection.
+- No way to measure improvement over time (e.g., "Are we getting fewer Minor-FigTable comments?").
+- Past answers to similar comments cannot be searched or reused efficiently.
+- L&L sessions lack data-driven evidence of recurring issues.
+
+### 1.3 System Architecture: Two-Part Design
+
+```
+┌──────────────────────────────────────────────────────────┐
+│  Part A: Claude Skill (runs in Claude chat interface)    │
+│                                                          │
+│  User uploads raw comment file (Excel/PDF/DOCX)         │
+│  → Claude parses, classifies, and formats                │
+│  → Outputs structured JSON/CSV per the Ingestion Schema  │
+└──────────────────────┬───────────────────────────────────┘
+                       │  structured file
+                       ▼
+┌──────────────────────────────────────────────────────────┐
+│  Part B: Comment Tracker Program (built by Claude Code)  │
+│                                                          │
+│  CLI tool that:                                          │
+│  - Imports structured comment data into SQLite DB        │
+│  - Queries and searches past comments                    │
+│  - Generates analytics and trend reports                 │
+│  - Exports L&L-ready summaries                           │
+│  - Tracks BSC performance metrics                        │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Why two parts?**
+- Raw comment files from clients come in wildly different formats (Excel tables, PDF annotations, DOCX tracked changes, email text). Standardizing these requires LLM interpretation — best handled by Claude in chat.
+- The program itself stays deterministic: it only accepts well-structured input and focuses on storage, querying, and analytics.
+
+---
+
+## 2. Data Model
+
+### 2.1 Existing Classification System (from comment-response-guide skill)
+
+The program must align with GeoView's established comment taxonomy:
+
+**Severity:**
+- `Major` — Impacts technical accuracy, requires reprocessing
+- `Minor` — Cosmetic/editorial, no reprocessing needed
+
+**Minor Sub-Categories (5-way):**
+- `Typo` — Spelling, grammar, wording
+- `Readability` — Sentence clarity, paragraph flow
+- `FigTable` — Figure/table quality, captions, resolution
+- `Format` — Style consistency, terminology, numbering
+- `Reference` — TOC, cross-references, appendix links
+
+**Status:**
+- `Accepted` — Will fix as requested
+- `Accepted (modified)` — Will fix but differently than requested
+- `Noted` — Acknowledged, no change made (with justification)
+- `Rejected` — Will not change (with justification)
+
+**Exclusion:**
+- Comments about submission/revision logistics, scope questions, timelines are excluded from performance metrics.
+
+### 2.2 Database Schema (SQLite)
+
+```sql
+-- Projects table
+CREATE TABLE projects (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_code TEXT UNIQUE NOT NULL,       -- e.g., "JAKO2025"
+    project_name TEXT NOT NULL,              -- e.g., "JAKO Route Survey 2025"
+    client TEXT NOT NULL,                    -- e.g., "JAKO"
+    report_type TEXT,                        -- Processing / Interpretation / Field / Other
+    survey_type TEXT,                        -- OWF / Route / Geotech / Other
+    start_date TEXT,                         -- YYYY-MM-DD
+    end_date TEXT,
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Comment batches (one per review cycle / revision)
+CREATE TABLE batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES projects(id),
+    revision TEXT NOT NULL,                  -- "Rev01", "Rev02", etc.
+    reviewer TEXT,                           -- Client reviewer name/team
+    received_date TEXT,                      -- YYYY-MM-DD
+    source_file TEXT,                        -- Original filename for traceability
+    total_comments INTEGER,                  -- Auto-calculated on import
+    notes TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE(project_id, revision)
+);
+
+-- Individual comments
+CREATE TABLE comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_id INTEGER NOT NULL REFERENCES batches(id),
+    comment_number INTEGER NOT NULL,         -- Sequential # within batch
+    section TEXT,                            -- "3.2, p.15", "Table 4.1", "Fig 5.3"
+    comment_text TEXT NOT NULL,              -- Original comment (full text)
+    severity TEXT NOT NULL CHECK(severity IN ('Major', 'Minor')),
+    category TEXT NOT NULL,                  -- Major: "Technical"
+                                             -- Minor: "Typo", "Readability", "FigTable",
+                                             --        "Format", "Reference"
+    status TEXT NOT NULL CHECK(status IN ('Accepted', 'Accepted (modified)', 'Noted', 'Rejected')),
+    response_text TEXT,                      -- Our answer
+    assignee TEXT,                           -- Person who resolved
+    resolved_date TEXT,
+    excluded INTEGER DEFAULT 0,             -- 1 = excluded from stats (logistics/scope)
+    exclude_reason TEXT,                     -- Why excluded
+    confidence TEXT DEFAULT 'High',          -- Classification confidence: High/Medium/Low
+    tags TEXT,                               -- Comma-separated free tags for custom grouping
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- L&L links (comments flagged as lessons learned)
+CREATE TABLE ll_flags (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    comment_id INTEGER NOT NULL REFERENCES comments(id),
+    ll_type TEXT NOT NULL CHECK(ll_type IN ('Recurring', 'Process', 'Prevention', 'Improvement')),
+    ll_summary TEXT,                         -- One-line lesson summary
+    ll_action TEXT,                          -- Suggested preventive action
+    flagged_date TEXT DEFAULT (date('now')),
+    flagged_by TEXT DEFAULT 'system'         -- 'system' (auto) or 'manual'
+);
+
+-- Full-text search virtual table
+CREATE VIRTUAL TABLE comments_fts USING fts5(
+    comment_text,
+    response_text,
+    section,
+    tags,
+    content='comments',
+    content_rowid='id'
+);
+```
+
+### 2.3 Ingestion Schema (Input Format)
+
+This is the format that the Claude skill must produce. The program only accepts this structure.
+
+**JSON format (primary):**
+
+```json
+{
+  "project": {
+    "project_code": "JAKO2025",
+    "project_name": "JAKO Route Survey 2025",
+    "client": "JAKO",
+    "report_type": "Processing",
+    "survey_type": "Route"
+  },
+  "batch": {
+    "revision": "Rev02",
+    "reviewer": "Client Technical Team",
+    "received_date": "2025-11-20",
+    "source_file": "JAKO_Comments_Rev02.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "3.2, p.15",
+      "comment_text": "Typo in paragraph 2: 'anomoly' should be 'anomaly'",
+      "severity": "Minor",
+      "category": "Typo",
+      "status": "Accepted",
+      "response_text": "Corrected in Rev 03.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": ""
+    },
+    {
+      "comment_number": 2,
+      "section": "Fig 5.3",
+      "comment_text": "Figure resolution is too low for print. Please provide at 300 dpi minimum.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Accepted",
+      "response_text": "Replaced with 300 dpi version in Rev 03.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "resolution"
+    }
+  ]
+}
+```
+
+**CSV format (alternative):**
+
+```csv
+comment_number,section,comment_text,severity,category,status,response_text,assignee,excluded,exclude_reason,confidence,tags
+1,"3.2, p.15","Typo: 'anomoly' → 'anomaly'",Minor,Typo,Accepted,"Corrected in Rev 03.",KJH,0,,High,
+2,"Fig 5.3","Resolution too low",Minor,FigTable,Accepted,"Replaced at 300 dpi.",KJH,0,,High,resolution
+```
+
+When using CSV, project/batch metadata is provided via CLI `--var` arguments.
+
+---
+
+## 3. Program Features
+
+### 3.1 Import
+
+```bash
+# Import from JSON (includes project + batch metadata)
+comment-tracker import --file comments_JAKO2025_Rev02.json
+
+# Import from CSV (metadata via CLI)
+comment-tracker import \
+  --file comments.csv \
+  --project-code JAKO2025 \
+  --project-name "JAKO Route Survey 2025" \
+  --client JAKO \
+  --report-type Processing \
+  --revision Rev02 \
+  --reviewer "Client Technical Team"
+
+# Re-import (update existing batch — warns before overwrite)
+comment-tracker import --file comments_JAKO2025_Rev02.json --update
+```
+
+**Import behavior:**
+- If project doesn't exist, create it.
+- If project exists, reuse it (match by `project_code`).
+- If batch (project + revision) already exists, refuse unless `--update` flag is set.
+- Validate all fields against schema before inserting (fail fast with clear error).
+- Update FTS index after import.
+- Print summary: "Imported 23 comments (5 Major, 18 Minor) for JAKO2025 Rev02."
+
+### 3.2 Search & Query
+
+```bash
+# Full-text search across all comments and responses
+comment-tracker search "figure resolution"
+
+# Search with filters
+comment-tracker search "velocity" --client JAKO --severity Major
+comment-tracker search "coordinate" --category FigTable --status Accepted
+
+# List all comments for a project
+comment-tracker list --project JAKO2025
+
+# List comments for a specific revision
+comment-tracker list --project JAKO2025 --revision Rev02
+
+# Show specific comment detail (with full response)
+comment-tracker show --id 42
+
+# Find similar past responses (for reuse)
+comment-tracker similar "Please improve figure resolution to 300 dpi"
+```
+
+**`similar` command:**
+- Uses FTS5 to find comments with matching terms.
+- Returns top N results ranked by relevance.
+- Shows: project, revision, original comment, response, severity, category.
+- Purpose: When writing a new response, find how similar comments were answered before.
+
+### 3.3 Analytics & Statistics
+
+```bash
+# Project-level summary
+comment-tracker stats --project JAKO2025
+
+# Client-level summary (across all projects for that client)
+comment-tracker stats --client JAKO
+
+# Global summary (all data)
+comment-tracker stats
+
+# Revision trend for a project
+comment-tracker trend --project JAKO2025
+
+# Category distribution report
+comment-tracker distribution --client Orsted
+
+# Export stats to Excel
+comment-tracker stats --client JAKO --output jako_stats.xlsx
+```
+
+#### 3.3.1 Project-Level Stats (console output example)
+
+```
+================================================================
+  Comment Statistics: JAKO2025 (JAKO Route Survey 2025)
+  Client: JAKO  |  Type: Processing  |  Survey: Route
+================================================================
+
+Revision Summary:
+  Rev01: 45 comments (7 Major, 38 Minor)
+  Rev02: 12 comments (4 Major, 8 Minor)  ← 73% reduction
+  Rev03:  3 comments (1 Major, 2 Minor)  ← 75% reduction
+
+Overall:
+  Total comments received: 60
+  Major: 12 (20%)  |  Minor: 48 (80%)
+  Excluded: 5
+
+Minor Category Breakdown:
+  Typo/Grammar:     14 (29%)  ████████▌
+  Readability:       8 (17%)  █████
+  Figure/Table:     12 (25%)  ███████▌
+  Format/Style:      9 (19%)  █████▌
+  TOC/Reference:     5 (10%)  ███
+
+Status Distribution:
+  Accepted:            52 (87%)
+  Accepted (modified):  4 (7%)
+  Noted:                3 (5%)
+  Rejected:             1 (2%)
+
+Top Recurring Themes:
+  1. "figure resolution" — 8 occurrences across 3 revisions
+  2. "coordinate system" — 4 occurrences
+  3. "terminology consistency" — 3 occurrences
+================================================================
+```
+
+#### 3.3.2 Revision Trend (console output example)
+
+```
+  JAKO2025 Comment Trend
+  
+  Rev01  ████████████████████████████████████████████ 45
+  Rev02  ████████████ 12
+  Rev03  ███ 3
+
+  Major:  7 → 4 → 1  (86% total reduction)
+  Minor: 38 → 8 → 2  (95% total reduction)
+```
+
+#### 3.3.3 Client-Level Cross-Project Comparison
+
+```
+================================================================
+  Client Summary: JAKO (3 projects)
+================================================================
+
+  JAKO2024_Geotech:  Rev01: 32  →  Rev02: 9   (72% reduction)
+  JAKO2025_Route:    Rev01: 45  →  Rev03: 3   (93% reduction)
+  JAKO2025_OWF:      Rev01: 28  →  Rev02: 15  (46% reduction)
+
+  Average first-revision comments: 35
+  Average final-revision comments: 9
+  Average reduction: 70%
+
+  Most common category across projects: FigTable (31%)
+  Most common Major topic: "coordinate system mismatch"
+================================================================
+```
+
+### 3.4 L&L Integration
+
+#### 3.4.1 Auto-Flagging
+
+The program identifies comments that may warrant L&L documentation:
+
+```bash
+# Find recurring patterns across projects (potential L&L candidates)
+comment-tracker ll-scan
+
+# Flag a specific comment as L&L material
+comment-tracker ll-flag --id 42 --type Recurring --summary "Figure resolution consistently below 300 dpi"
+
+# View all L&L-flagged items
+comment-tracker ll-list
+
+# Export L&L summary for a session
+comment-tracker ll-export --output ll_input.json
+```
+
+**Auto-scan rules (`ll-scan`):**
+- **Recurring:** Same category + similar text appears in 3+ different projects → flag as `Recurring`
+- **Process:** Major comments that caused reprocessing → flag as `Process`
+- **Prevention:** Comments that could have been prevented by a checklist → flag as `Prevention`
+
+```
+================================================================
+  L&L Scan Results: 5 potential items found
+================================================================
+
+1. [Recurring] "Figure resolution < 300 dpi"
+   Found in: JAKO2024 (3x), JAKO2025 (2x), Orsted2025 (4x)
+   Suggested action: Add figure resolution check to QC checklist
+
+2. [Process] "Wrong velocity model applied to lines L0050-L0080"
+   Project: EDF2025 Rev01 → caused reprocessing of 30 lines
+   Suggested action: Add velocity model verification step
+
+3. [Recurring] "Inconsistent use of 'seabed' vs 'sea bed'"
+   Found in: 4 projects across 2 clients
+   Suggested action: Standardize terminology in report template
+
+...
+================================================================
+```
+
+#### 3.4.2 L&L Export Format
+
+Outputs a structured summary for use in L&L sessions (compatible with lessons-learned-writer skill):
+
+```json
+{
+  "scan_date": "2026-02-10",
+  "period": "2025-01 to 2025-12",
+  "items": [
+    {
+      "type": "Recurring",
+      "title": "Figure resolution consistently below client requirement",
+      "evidence": {
+        "occurrences": 9,
+        "projects": ["JAKO2024", "JAKO2025", "Orsted2025"],
+        "clients": ["JAKO", "Orsted"],
+        "example_comments": [
+          "Fig 3.2: Resolution too low for A3 print",
+          "All bathymetry figures below 300 dpi requirement"
+        ]
+      },
+      "suggested_action": "Add automated figure resolution check (≥300 dpi) to report QC script",
+      "impact": "~9 minor comments prevented per year"
+    }
+  ]
+}
+```
+
+### 3.5 BSC Performance Tracking
+
+```bash
+# Personal performance summary (for BSC documentation)
+comment-tracker bsc --assignee KJH --year 2025
+
+# Period-specific
+comment-tracker bsc --assignee KJH --from 2025-07 --to 2025-12
+```
+
+Output:
+
+```
+================================================================
+  BSC Performance Report: KJH (2025)
+================================================================
+
+Documents reviewed/authored: 8
+Total comments addressed: 127
+
+Role breakdown:
+  Main author:     5 documents, avg 31 comments/doc
+  Supporting:      3 documents, avg 12 comments/doc
+
+Improvement trend (as main author):
+  Average Rev01 → final reduction: 78%
+  Best:  JAKO2025 (93% reduction, Rev01→Rev03)
+  Worst: EDF2025_OWF (46% reduction, Rev01→Rev02, ongoing)
+
+Category I handle most: FigTable (35%), Format (25%)
+
+Achievements:
+  - 0 Major comments in final revision across 4/5 authored docs
+  - 93% reduction in JAKO2025 (from 45 to 3)
+================================================================
+```
+
+---
+
+## 4. CLI Interface
+
+### 4.1 Command Structure
+
+```bash
+comment-tracker <command> [options]
+```
+
+| Command | Description |
+|---------|-------------|
+| `import` | Import structured comment data (JSON/CSV) |
+| `list` | List comments with filters |
+| `show` | Show single comment detail |
+| `search` | Full-text search across comments and responses |
+| `similar` | Find similar past comments for response reuse |
+| `stats` | Generate statistics (project/client/global) |
+| `trend` | Show revision-over-revision trend |
+| `distribution` | Category distribution analysis |
+| `bsc` | BSC performance report |
+| `ll-scan` | Scan for L&L candidates |
+| `ll-flag` | Manually flag a comment for L&L |
+| `ll-list` | List all L&L-flagged items |
+| `ll-export` | Export L&L summary |
+| `export` | Export raw data (filtered) to CSV/JSON |
+| `db-info` | Show database statistics |
+
+### 4.2 Common Options
+
+| Option | Description |
+|--------|-------------|
+| `--project CODE` | Filter by project code |
+| `--client NAME` | Filter by client |
+| `--revision REV` | Filter by revision |
+| `--severity Major/Minor` | Filter by severity |
+| `--category CAT` | Filter by category |
+| `--status STATUS` | Filter by status |
+| `--assignee NAME` | Filter by assignee |
+| `--from YYYY-MM` | Date range start |
+| `--to YYYY-MM` | Date range end |
+| `--output FILE` | Output to file (Excel/CSV/JSON) |
+| `--db PATH` | Database file path (default: `~/.comment-tracker/comments.db`) |
+
+### 4.3 Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | No results found |
+| 2 | Input validation error |
+| 3 | Database error |
+
+---
+
+## 5. Excel Report Generation
+
+### 5.1 Stats Export (`--output stats.xlsx`)
+
+**Tab 1: Overview**
+
+| Metric | Value |
+|--------|-------|
+| Total Projects | 12 |
+| Total Batches | 28 |
+| Total Comments | 487 |
+| Date Range | 2024-03 to 2025-12 |
+
+**Tab 2: By Project**
+
+| Project | Client | Type | Rev Count | Total | Major | Minor | Final Rev Comments | Reduction % |
+|---------|--------|------|-----------|-------|-------|-------|--------------------|-------------|
+| JAKO2025 | JAKO | Processing | 3 | 60 | 12 | 48 | 3 | 93% |
+| EDF2025 | EDF | Processing | 2 | 43 | 8 | 35 | 15 | 65% |
+
+**Tab 3: By Client**
+
+| Client | Projects | Total Comments | Avg per Project | Most Common Category | Avg Reduction |
+|--------|----------|----------------|-----------------|---------------------|---------------|
+| JAKO | 3 | 105 | 35 | FigTable (31%) | 70% |
+| Orsted | 4 | 189 | 47 | Format (28%) | 62% |
+
+**Tab 4: Category Trend**
+
+| Period | Typo | Readability | FigTable | Format | Reference | Total Minor |
+|--------|------|-------------|----------|--------|-----------|-------------|
+| 2024 Q3 | 12 | 8 | 15 | 9 | 4 | 48 |
+| 2024 Q4 | 10 | 6 | 11 | 7 | 3 | 37 |
+| 2025 Q1 | 8 | 5 | 8 | 6 | 2 | 29 |
+
+**Tab 5: Recurring Themes**
+
+| Theme | Occurrences | Projects | Clients | Category | L&L Flagged |
+|-------|-------------|----------|---------|----------|-------------|
+| figure resolution | 9 | 3 | 2 | FigTable | Yes |
+| coordinate system | 4 | 2 | 2 | Technical | No |
+| terminology | 3 | 4 | 3 | Format | Yes |
+
+---
+
+## 6. Claude Skill Specification (Part A)
+
+### 6.1 Skill Purpose
+
+The Claude skill (used in a regular Claude chat, NOT in the program) transforms raw client comment files into the structured Ingestion Schema defined in Section 2.3.
+
+### 6.2 Skill Trigger
+
+User uploads a raw comment file and says something like:
+- "Comment Tracker 포맷으로 정리해줘"
+- "이 코멘트 파일 정리"
+- "코멘트 DB용으로 변환"
+
+### 6.3 Skill Workflow
+
+```
+1. User uploads raw comment file (Excel/PDF/DOCX/email text)
+2. Claude reads the file and identifies:
+   - Comment list (what the client wrote)
+   - Section/location references
+   - Any existing severity markings by client
+3. Claude asks user for missing metadata:
+   - Project code, client, report type (if not obvious)
+   - Revision number
+   - Reviewer name
+4. Claude classifies each comment:
+   - Apply severity (Major/Minor) using classification-rules.md
+   - Apply Minor sub-category (5-way) using keyword matching
+   - Apply exclusion rules
+   - Mark confidence level
+5. Claude generates the structured output:
+   - JSON file following Ingestion Schema
+   - Summary statistics
+6. User reviews, adjusts if needed
+7. User saves JSON and feeds to: comment-tracker import --file <file>
+```
+
+### 6.4 Classification Logic (for the skill)
+
+The skill must follow the existing classification-rules.md:
+
+**Priority order:**
+1. Check exclusion rules → if excluded, set `excluded: true` with reason
+2. Check if Major (technical impact, reprocessing needed) → severity: "Major", category: "Technical"
+3. For Minor, classify by keyword:
+   - Category 1 keywords → "Typo"
+   - Category 3 keywords → "FigTable" (check before Cat 2)
+   - Category 5 keywords → "Reference"
+   - Category 4 keywords → "Format"
+   - Default → "Readability" (catch-all)
+
+**Confidence assignment:**
+- High: Unambiguous keyword match
+- Medium: Could belong to two categories
+- Low: No clear match, defaulted to Readability
+
+### 6.5 Skill Output Requirements
+
+The skill must produce:
+1. **JSON file** exactly matching the Ingestion Schema (Section 2.3)
+2. **Console summary** showing:
+   - Total comments parsed
+   - Major/Minor split
+   - Category distribution
+   - Any excluded comments with reasons
+   - Any Low-confidence classifications for user review
+3. **Review prompt**: "Low-confidence 분류 3건이 있습니다. 확인해주세요:" followed by the ambiguous items
+
+---
+
+## 7. Project Structure
+
+```
+comment-tracker/
+├── comment_tracker/
+│   ├── __init__.py
+│   ├── cli.py                  # Click CLI entry point
+│   ├── db.py                   # Database initialization, connection, migrations
+│   ├── models.py               # Data classes for Comment, Batch, Project, etc.
+│   ├── importer.py             # JSON/CSV parsing and DB insertion
+│   ├── search.py               # FTS5 search and similarity matching
+│   ├── analytics/
+│   │   ├── __init__.py
+│   │   ├── project_stats.py    # Project-level statistics
+│   │   ├── client_stats.py     # Client-level cross-project stats
+│   │   ├── trend.py            # Revision-over-revision trend analysis
+│   │   ├── distribution.py     # Category distribution analysis
+│   │   ├── recurring.py        # Recurring theme detection
+│   │   └── bsc.py              # BSC performance report generation
+│   ├── ll/
+│   │   ├── __init__.py
+│   │   ├── scanner.py          # Auto-scan for L&L candidates
+│   │   ├── flagger.py          # Manual/auto flagging logic
+│   │   └── exporter.py         # L&L export to JSON
+│   └── reporters/
+│       ├── __init__.py
+│       ├── console.py          # Console formatted output
+│       └── excel.py            # Excel multi-tab report generation
+├── tests/
+│   ├── __init__.py
+│   ├── test_importer.py
+│   ├── test_search.py
+│   ├── test_analytics.py
+│   ├── test_ll.py
+│   └── fixtures/
+│       ├── sample_import.json
+│       └── sample_import.csv
+├── requirements.txt
+├── setup.py
+└── README.md
+```
+
+---
+
+## 8. Technology Stack
+
+| Component | Library | Purpose |
+|-----------|---------|---------|
+| CLI | Click | Command-line interface |
+| Database | sqlite3 (stdlib) | Data storage, FTS5 |
+| Data processing | pandas | Aggregation, pivot tables, statistics |
+| Excel reports | openpyxl | Multi-tab formatted reports |
+| JSON handling | json (stdlib) | Ingestion schema parsing |
+| Date handling | datetime (stdlib) | Date filtering, period grouping |
+| Data classes | dataclasses | Structured models |
+
+No external DB server needed — SQLite file stored at `~/.comment-tracker/comments.db` by default.
+
+---
+
+## 9. Development Phases
+
+### Phase 1: Core Data Layer
+- Project skeleton, CLI setup (Click)
+- Database schema creation and migration system
+- Data models (dataclasses)
+- JSON/CSV importer with validation
+- Basic `list` and `show` commands
+- `db-info` command
+
+### Phase 2: Search & Query
+- FTS5 full-text search setup
+- `search` command with filters
+- `similar` command (FTS5-based relevance ranking)
+- `export` command (filtered data to CSV/JSON)
+
+### Phase 3: Analytics
+- `stats` command (project/client/global levels)
+- `trend` command (revision-over-revision)
+- `distribution` command (category breakdown)
+- `bsc` command (personal performance report)
+- Recurring theme detection algorithm
+- Console reporter (formatted output)
+
+### Phase 4: L&L Integration
+- `ll-scan` command (auto-detect recurring patterns)
+- `ll-flag` command (manual flagging)
+- `ll-list` and `ll-export` commands
+- L&L export format (compatible with lessons-learned-writer skill)
+
+### Phase 5: Excel Reporting
+- Excel reporter with 5 tabs (Overview, By Project, By Client, Category Trend, Recurring Themes)
+- Conditional formatting (color-coded severity/status)
+- Charts embedded in Excel (optional: category pie chart, trend line chart)
+
+### Phase 6: Claude Skill
+- Create/update the comment formatting skill
+- Ingestion schema documentation
+- Test with sample comment files from different clients
+- Integration test: raw file → skill → JSON → import → analytics
+
+---
+
+## 10. Recurring Theme Detection Algorithm
+
+### 10.1 Logic
+
+```python
+def find_recurring_themes(min_occurrences=3, min_projects=2):
+    """
+    Find comment themes that appear across multiple projects.
+
+    Approach:
+    1. Group comments by category
+    2. Within each category, extract key terms from comment_text
+    3. Cluster similar comments using term overlap
+    4. Flag clusters that span >= min_projects and have >= min_occurrences
+    """
+
+    # Step 1: Extract significant terms (nouns, technical terms)
+    # Use simple word frequency — no ML needed
+    # Exclude stop words and common report terms
+
+    # Step 2: For each term, count:
+    #   - How many comments contain it
+    #   - How many unique projects
+    #   - How many unique clients
+
+    # Step 3: Filter by thresholds
+    #   - occurrences >= min_occurrences
+    #   - unique projects >= min_projects
+
+    # Step 4: Group and rank by occurrence count
+```
+
+### 10.2 Term Extraction
+
+Simple keyword-based approach (no ML):
+- Split comment text into words
+- Lowercase, strip punctuation
+- Remove stop words (English + domain-specific: "please", "should", "the", etc.)
+- Keep 2-grams for phrases: "figure resolution", "coordinate system", "sea bed"
+- Count term frequency across all comments
+
+### 10.3 Similarity for `similar` Command
+
+Uses SQLite FTS5 `rank` function:
+```sql
+SELECT c.*, rank
+FROM comments_fts
+JOIN comments c ON comments_fts.rowid = c.id
+WHERE comments_fts MATCH ?
+ORDER BY rank
+LIMIT 10;
+```
+
+---
+
+## 11. Configuration
+
+### 11.1 Default Config Location
+
+`~/.comment-tracker/config.yaml`
+
+```yaml
+database:
+  path: "~/.comment-tracker/comments.db"
+
+defaults:
+  assignee: "KJH"                  # Default assignee if not specified
+  output_format: "console"          # console / excel
+
+recurring_scan:
+  min_occurrences: 3
+  min_projects: 2
+  exclude_categories: []            # Categories to skip in scan
+
+bsc:
+  default_assignee: "KJH"
+  fiscal_year_start: "01"           # January
+```
+
+---
+
+## 12. Integration Points
+
+### 12.1 With comment-response-guide Skill
+
+The existing skill classifies and generates answer sheets. The Comment Tracker extends this by:
+- Accumulating answer sheets over time
+- Providing historical context ("last time this client asked about X, we answered Y")
+- Feeding back statistics to improve future answer quality
+
+### 12.2 With lessons-learned-writer Skill
+
+The L&L export (`ll-export`) produces structured data that the L&L skill can consume:
+- Recurring patterns become L&L candidates
+- Evidence (occurrence count, affected projects) supports L&L documentation
+- Suggested actions come pre-drafted from the scan
+
+### 12.3 With BSC Daily Report Skill
+
+The `bsc` command output can feed into the BSC monthly performance documentation:
+- Comment reduction percentages as performance evidence
+- Category trends showing improvement areas
+
+### 12.4 Workflow Summary
+
+```
+Raw comment file
+    │
+    ├──→ [Claude Chat] comment-response-guide skill
+    │        → Answer Sheet for client submission
+    │
+    ├──→ [Claude Chat] Comment Tracker formatting skill
+    │        → Structured JSON
+    │            │
+    │            ▼
+    │    [CLI] comment-tracker import
+    │            │
+    │            ▼
+    │    SQLite DB (accumulated history)
+    │            │
+    │            ├──→ comment-tracker stats/trend → BSC report input
+    │            ├──→ comment-tracker ll-scan → L&L session input
+    │            ├──→ comment-tracker similar → Response reuse
+    │            └──→ comment-tracker search → Ad-hoc queries
+    │
+    └──→ [When L&L session] lessons-learned-writer skill
+             ← consumes ll-export output
+```
+
+여기선 CLI 방식으로 되어있는데, 사용자 친화적인 GUI 방식으로 제작해줘. 전문적인 형태로 부탁함. 프로그램 만들고 나서 클로드에게 새로운 채팅방 만들어서 스킬 알려주고, 그 스킬대로 이 프로그램에 입력시킬 포맷의 코멘트 관련 데이터를 제작할것임.
