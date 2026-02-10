@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Import Data - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Import Data</h1>
+    <p class="subtitle">Upload structured comment data (JSON or CSV)</p>
+</div>
+
+<div class="row">
+    <div class="col-xl-8">
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('import_page') }}">
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-cloud-upload-fill me-2"></i>Upload File</div>
+                <div class="card-body">
+                    <div class="upload-area mb-3">
+                        <i class="bi bi-file-earmark-arrow-up d-block"></i>
+                        <h5>Drag & drop your file here</h5>
+                        <p class="text-muted mb-0">or click to browse. Supports JSON and CSV files.</p>
+                    </div>
+                    <input type="file" name="file" id="fileInput" accept=".json,.csv" class="d-none" required>
+
+                    <div class="form-check mt-3">
+                        <input type="checkbox" class="form-check-input" id="updateMode" name="update">
+                        <label class="form-check-label" for="updateMode">
+                            <strong>Update mode</strong> - Overwrite existing batch if it already exists
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSV metadata fields (shown only for CSV) -->
+            <div class="card mb-4" id="csvFields" style="display: none;">
+                <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>CSV Metadata (required for CSV files)</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Project Code *</label>
+                            <input type="text" class="form-control" name="project_code" placeholder="e.g., JAKO2025">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project Name *</label>
+                            <input type="text" class="form-control" name="project_name" placeholder="e.g., JAKO Route Survey 2025">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Client *</label>
+                            <input type="text" class="form-control" name="client" placeholder="e.g., JAKO">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Report Type</label>
+                            <select class="form-select" name="report_type">
+                                <option value="">Select...</option>
+                                <option>Processing</option>
+                                <option>Interpretation</option>
+                                <option>Field</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Survey Type</label>
+                            <select class="form-select" name="survey_type">
+                                <option value="">Select...</option>
+                                <option>OWF</option>
+                                <option>Route</option>
+                                <option>Geotech</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Revision *</label>
+                            <input type="text" class="form-control" name="revision" placeholder="e.g., Rev01">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Reviewer</label>
+                            <input type="text" class="form-control" name="reviewer" placeholder="e.g., Client Technical Team">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Received Date</label>
+                            <input type="date" class="form-control" name="received_date">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-upload me-2"></i>Import
+            </button>
+        </form>
+    </div>
+
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-question-circle-fill me-2"></i>Import Guide</div>
+            <div class="card-body">
+                <h6 class="fw-bold">JSON Format (Recommended)</h6>
+                <p class="text-muted small">JSON files include project, batch, and comment data in one file. See the ingestion schema for the required structure.</p>
+
+                <h6 class="fw-bold mt-3">CSV Format</h6>
+                <p class="text-muted small">CSV files contain only comment rows. Project and batch metadata must be provided via the form fields above.</p>
+
+                <hr>
+                <h6 class="fw-bold">Required Comment Fields</h6>
+                <ul class="small text-muted">
+                    <li><code>comment_number</code> - Sequential number</li>
+                    <li><code>comment_text</code> - The comment content</li>
+                    <li><code>severity</code> - Major or Minor</li>
+                    <li><code>category</code> - Technical, Typo, Readability, FigTable, Format, Reference</li>
+                    <li><code>status</code> - Accepted, Accepted (modified), Noted, Rejected</li>
+                </ul>
+
+                <hr>
+                <h6 class="fw-bold">Update Mode</h6>
+                <p class="text-muted small mb-0">If a batch (same project + revision) already exists, import will fail unless update mode is checked. Update mode deletes the existing batch data and replaces it.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

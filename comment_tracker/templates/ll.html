@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Lessons & Learned - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1>Lessons & Learned</h1>
+        <p class="subtitle">{{ flags|length }} items flagged for L&L review</p>
+    </div>
+    <div>
+        <a href="{{ url_for('ll_scan') }}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-radar me-1"></i>Run L&L Scan
+        </a>
+        <a href="{{ url_for('ll_export_download') }}" class="btn btn-primary">
+            <i class="bi bi-download me-1"></i>Export L&L JSON
+        </a>
+    </div>
+</div>
+
+{% if flags %}
+{% for flag in flags %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="badge-ll-type badge-{{ flag.ll_type|lower }} me-2">{{ flag.ll_type }}</span>
+                <a href="{{ url_for('comment_detail', comment_id=flag.comment_id) }}" class="text-decoration-none fw-500">
+                    Comment #{{ flag.comment_id }}
+                </a>
+                <span class="text-muted mx-1">|</span>
+                <span>{{ flag.project_code }} {{ flag.revision }}</span>
+                <span class="text-muted mx-1">|</span>
+                <span class="text-muted">{{ flag.client }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-severity badge-{{ flag.severity|lower }}">{{ flag.severity }}</span>
+                <span class="badge-category">{{ flag.category }}</span>
+                <span class="text-muted small">{{ flag.flagged_date }}</span>
+            </div>
+        </div>
+
+        <p class="mb-1">{{ flag.comment_text }}</p>
+
+        {% if flag.ll_summary %}
+        <div class="mt-2 p-2 rounded" style="background: #f8fafc;">
+            <strong class="small">Summary:</strong> {{ flag.ll_summary }}
+        </div>
+        {% endif %}
+
+        {% if flag.ll_action %}
+        <div class="mt-1 p-2 rounded" style="background: #f0fdf4;">
+            <strong class="small">Action:</strong> {{ flag.ll_action }}
+        </div>
+        {% endif %}
+
+        <div class="mt-2">
+            <form method="POST" action="{{ url_for('ll_unflag', flag_id=flag.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Remove Flag</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-lightbulb"></i>
+            <h5>No L&L Items Yet</h5>
+            <p>Flag comments from the comment detail page, or run an automatic scan to find candidates.</p>
+            <a href="{{ url_for('ll_scan') }}" class="btn btn-primary">
+                <i class="bi bi-radar me-2"></i>Run L&L Scan
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Comment #{{ comment.id }} - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('comments_page') }}">Comments</a></li>
+            <li class="breadcrumb-item active">Comment #{{ comment.id }}</li>
+        </ol>
+    </nav>
+    <h1>Comment #{{ comment.id }}</h1>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-8">
+        <!-- Comment Content -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-chat-text-fill me-2"></i>Comment</div>
+            <div class="card-body">
+                <div class="comment-text-full mb-3">{{ comment.comment_text }}</div>
+
+                {% if comment.response_text %}
+                <h6 class="fw-bold mt-4 mb-2"><i class="bi bi-reply-fill me-1"></i>Response</h6>
+                <div class="comment-text-full" style="border-left-color: #10b981;">
+                    {{ comment.response_text }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Similar Comments -->
+        {% if similar %}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-intersect me-2"></i>Similar Comments</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Project</th>
+                                <th>Comment</th>
+                                <th>Response</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in similar %}
+                            <tr>
+                                <td><a href="{{ url_for('comment_detail', comment_id=s.id) }}">{{ s.id }}</a></td>
+                                <td>{{ s.project_code }} {{ s.revision }}</td>
+                                <td class="comment-text">{{ s.comment_text }}</td>
+                                <td class="comment-text">{{ s.response_text or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-xl-4">
+        <!-- Metadata -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>Details</div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><td class="text-muted">Project</td><td class="fw-500"><a href="{{ url_for('project_analytics', project_code=comment.project_code) }}">{{ comment.project_code }}</a></td></tr>
+                    <tr><td class="text-muted">Project Name</td><td>{{ comment.project_name }}</td></tr>
+                    <tr><td class="text-muted">Client</td><td><a href="{{ url_for('client_analytics', client_name=comment.client) }}">{{ comment.client }}</a></td></tr>
+                    <tr><td class="text-muted">Revision</td><td>{{ comment.revision }}</td></tr>
+                    <tr><td class="text-muted">Section</td><td>{{ comment.section or '-' }}</td></tr>
+                    <tr>
+                        <td class="text-muted">Severity</td>
+                        <td><span class="badge-severity badge-{{ comment.severity|lower }}">{{ comment.severity }}</span></td>
+                    </tr>
+                    <tr><td class="text-muted">Category</td><td><span class="badge-category">{{ comment.category }}</span></td></tr>
+                    <tr>
+                        <td class="text-muted">Status</td>
+                        <td>
+                            <span class="badge-status badge-{{ 'accepted' if comment.status == 'Accepted' else 'modified' if 'modified' in comment.status else 'noted' if comment.status == 'Noted' else 'rejected' }}">
+                                {{ comment.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr><td class="text-muted">Assignee</td><td>{{ comment.assignee or '-' }}</td></tr>
+                    <tr><td class="text-muted">Reviewer</td><td>{{ comment.reviewer or '-' }}</td></tr>
+                    <tr><td class="text-muted">Received</td><td>{{ comment.received_date or '-' }}</td></tr>
+                    <tr>
+                        <td class="text-muted">Confidence</td>
+                        <td><span class="badge-confidence-{{ comment.confidence|lower }}">{{ comment.confidence }}</span></td>
+                    </tr>
+                    {% if comment.tags %}
+                    <tr><td class="text-muted">Tags</td><td>{% for tag in comment.tags.split(',') %}<span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>{% endfor %}</td></tr>
+                    {% endif %}
+                    {% if comment.excluded %}
+                    <tr><td class="text-muted">Excluded</td><td><span class="badge bg-warning text-dark">Yes</span> {{ comment.exclude_reason or '' }}</td></tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- L&L Flag -->
+        <div class="card">
+            <div class="card-header"><i class="bi bi-lightbulb-fill me-2"></i>Lessons & Learned</div>
+            <div class="card-body">
+                {% if comment.ll_flags %}
+                {% for flag in comment.ll_flags %}
+                <div class="mb-3 p-3 rounded" style="background: #f8fafc;">
+                    <span class="badge-ll-type badge-{{ flag.ll_type|lower }}">{{ flag.ll_type }}</span>
+                    {% if flag.ll_summary %}<p class="mt-2 mb-1 small">{{ flag.ll_summary }}</p>{% endif %}
+                    {% if flag.ll_action %}<p class="small text-muted mb-1"><strong>Action:</strong> {{ flag.ll_action }}</p>{% endif %}
+                    <form method="POST" action="{{ url_for('ll_unflag', flag_id=flag.id) }}" class="d-inline">
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1"><i class="bi bi-x-lg me-1"></i>Remove</button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <form method="POST" action="{{ url_for('ll_flag') }}">
+                    <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                    <div class="mb-2">
+                        <select class="form-select form-select-sm" name="ll_type" required>
+                            <option value="">Flag type...</option>
+                            <option value="Recurring">Recurring</option>
+                            <option value="Process">Process</option>
+                            <option value="Prevention">Prevention</option>
+                            <option value="Improvement">Improvement</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control form-control-sm" name="ll_summary" placeholder="Brief summary">
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" class="form-control form-control-sm" name="ll_action" placeholder="Suggested action">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-flag-fill me-1"></i>Flag for L&L</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

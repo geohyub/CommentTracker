@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}BSC Report - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>BSC Performance Report</h1>
+    <p class="subtitle">Individual performance tracking for BSC documentation</p>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Assignee</label>
+                <select class="form-select" name="assignee" required>
+                    <option value="">Select assignee...</option>
+                    {% for a in options.assignees %}
+                    <option value="{{ a }}" {{ 'selected' if current_assignee == a }}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Year</label>
+                <input type="number" class="form-control" name="year" value="{{ current_year or '' }}"
+                       placeholder="e.g., 2025" min="2020" max="2030">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From</label>
+                <input type="month" class="form-control" name="from" value="{{ request.args.get('from', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To</label>
+                <input type="month" class="form-control" name="to" value="{{ request.args.get('to', '') }}">
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-person-badge-fill me-1"></i>Generate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if report %}
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Documents</div>
+                    <div class="stat-value">{{ report.documents }}</div>
+                </div>
+                <div class="stat-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Comments Addressed</div>
+                    <div class="stat-value">{{ report.total_comments }}</div>
+                </div>
+                <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="stat-card">
+            <div class="stat-label">Top Categories Handled</div>
+            <div class="d-flex gap-2 mt-2 flex-wrap">
+                {% for cat in report.category_breakdown[:4] %}
+                <span class="badge-category" style="font-size: 13px; padding: 6px 12px;">
+                    {{ cat.category }}: {{ cat.count }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Projects Performance -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>Project Performance</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Client</th>
+                        <th>Comments</th>
+                        <th>Revisions</th>
+                        <th>Reduction</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in report.projects %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="text-decoration-none fw-500">
+                                {{ p.project_code }}
+                            </a>
+                        </td>
+                        <td>{{ p.client }}</td>
+                        <td>{{ p.comments_addressed }}</td>
+                        <td>
+                            {% if p.revisions %}
+                            {% for r in p.revisions %}
+                            <span class="badge bg-light text-dark me-1">{{ r.revision }}: {{ r.total }}</span>
+                            {% endfor %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.reduction is not none %}
+                            <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">
+                                &#9660; {{ p.reduction }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Achievements -->
+{% if report.achievements %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-trophy-fill me-2"></i>Achievements</div>
+    <div class="card-body">
+        <ul class="mb-0">
+            {% for ach in report.achievements %}
+            <li class="mb-2">
+                <i class="bi bi-check-circle-fill text-success me-2"></i>
+                {{ ach }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- Category Chart -->
+{% if report.category_breakdown %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+    <div class="card-body">
+        <div class="chart-container" style="height: 300px;">
+            <canvas id="bscCategoryChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% elif not current_assignee %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-person-badge"></i>
+            <h5>Select an Assignee</h5>
+            <p>Choose an assignee from the dropdown above to generate their BSC performance report.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if report and report.category_breakdown %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const catData = {{ report.category_breakdown | tojson }};
+    createDoughnutChart('bscCategoryChart',
+        catData.map(c => c.category),
+        catData.map(c => c.count),
+        catData.map(c => COLORS.categories[c.category] || '#94a3b8')
+    );
+});
+</script>
+{% endif %}
+{% endblock %}

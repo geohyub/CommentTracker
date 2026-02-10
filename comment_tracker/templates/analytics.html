@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Analytics - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1>Analytics</h1>
+        <p class="subtitle">Cross-project analytics and trends</p>
+    </div>
+    <a href="{{ url_for('export_excel') }}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-excel-fill me-2"></i>Export Excel Report
+    </a>
+</div>
+
+{% if projects %}
+<div class="row g-3 mb-4">
+    <!-- Category Distribution -->
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Overall Category Distribution</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Severity / Status -->
+    <div class="col-xl-3">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>Severity</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Trend by Period -->
+{% if category_trend %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-graph-up me-2"></i>Category Trend by Period</div>
+    <div class="card-body">
+        <div class="chart-container" style="height: 350px;">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Projects Comparison -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-bar-chart-fill me-2"></i>Project Comparison</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Client</th>
+                        <th>Type</th>
+                        <th>Revisions</th>
+                        <th>Total</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th>Reduction</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in projects %}
+                    <tr>
+                        <td class="fw-500">{{ p.project_code }}</td>
+                        <td>{{ p.client }}</td>
+                        <td>{{ p.report_type or '-' }}</td>
+                        <td>{{ p.batch_count }}</td>
+                        <td>{{ p.total_comments }}</td>
+                        <td><span class="badge-severity badge-major">{{ p.major_count }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ p.minor_count }}</span></td>
+                        <td>
+                            {% if p.reduction is not none %}
+                            <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">
+                                &#9660; {{ p.reduction }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Recurring Themes -->
+{% if themes %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-arrow-repeat me-2"></i>Recurring Themes</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Theme</th>
+                        <th>Occurrences</th>
+                        <th>Projects</th>
+                        <th>Clients</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in themes[:15] %}
+                    <tr>
+                        <td class="fw-500">{{ t.term }}</td>
+                        <td><span class="badge bg-primary">{{ t.occurrences }}</span></td>
+                        <td>{{ t.projects | join(', ') }}</td>
+                        <td>{{ t.clients | join(', ') }}</td>
+                        <td><span class="badge-category">{{ t.primary_category }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Clients Comparison -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-building me-2"></i>Client Comparison</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Projects</th>
+                        <th>Batches</th>
+                        <th>Total Comments</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clients %}
+                    <tr>
+                        <td class="fw-500">{{ c.client }}</td>
+                        <td>{{ c.project_count }}</td>
+                        <td>{{ c.batch_count }}</td>
+                        <td>{{ c.total_comments }}</td>
+                        <td><span class="badge-severity badge-major">{{ c.major }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ c.minor }}</span></td>
+                        <td><a href="{{ url_for('client_analytics', client_name=c.client) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-bar-chart"></i>
+            <h5>No analytics data yet</h5>
+            <p>Import comment data to see analytics.</p>
+            <a href="{{ url_for('import_page') }}" class="btn btn-primary">Import Data</a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if projects %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const catData = {{ distribution.by_category | tojson }};
+    if (catData.length > 0) {
+        createDoughnutChart('categoryChart',
+            catData.map(c => c.category),
+            catData.map(c => c.count),
+            catData.map(c => COLORS.categories[c.category] || '#94a3b8')
+        );
+    }
+
+    const sevData = {{ distribution.by_severity | tojson }};
+    createDoughnutChart('severityChart',
+        ['Major', 'Minor'],
+        [sevData.Major || 0, sevData.Minor || 0],
+        [COLORS.severities.Major, COLORS.severities.Minor]
+    );
+
+    const statusData = {{ distribution.by_status | tojson }};
+    if (statusData.length > 0) {
+        createDoughnutChart('statusChart',
+            statusData.map(s => s.status),
+            statusData.map(s => s.count),
+            statusData.map(s => COLORS.statuses[s.status] || '#94a3b8')
+        );
+    }
+
+    // Category Trend Line Chart
+    const trendData = {{ category_trend | tojson }};
+    if (trendData.length > 0) {
+        const categories = ['Typo', 'Readability', 'FigTable', 'Format', 'Reference'];
+        const datasets = categories.map(cat => ({
+            label: cat,
+            data: trendData.map(t => t[cat] || 0),
+            borderColor: COLORS.categories[cat],
+            backgroundColor: COLORS.categories[cat] + '20',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 4
+        }));
+        createLineChart('trendChart',
+            trendData.map(t => t.period),
+            datasets
+        );
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

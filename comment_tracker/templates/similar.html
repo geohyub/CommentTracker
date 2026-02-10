@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Find Similar - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Find Similar Comments</h1>
+    <p class="subtitle">Paste a comment to find similar past comments and their responses</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET">
+            <div class="mb-3">
+                <label class="form-label">Comment Text</label>
+                <textarea class="form-control" name="text" rows="3" placeholder="Paste a comment here to find similar past comments and their responses...">{{ text }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-intersect me-2"></i>Find Similar</button>
+        </form>
+    </div>
+</div>
+
+{% if text and results %}
+<p class="text-muted mb-3">{{ results|length }} similar comments found</p>
+
+{% for r in results %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <a href="{{ url_for('comment_detail', comment_id=r.id) }}" class="fw-bold text-decoration-none">#{{ r.id }}</a>
+                <span class="text-muted mx-1">|</span>
+                <span>{{ r.project_code }} {{ r.revision }}</span>
+                <span class="text-muted mx-1">|</span>
+                <span class="text-muted">{{ r.client }}</span>
+            </div>
+            <div>
+                <span class="badge-severity badge-{{ r.severity|lower }} me-1">{{ r.severity }}</span>
+                <span class="badge-category">{{ r.category }}</span>
+            </div>
+        </div>
+        <div class="mb-2">
+            <strong class="small text-muted">Comment:</strong>
+            <p class="mb-1">{{ r.comment_text }}</p>
+        </div>
+        {% if r.response_text %}
+        <div class="p-3 rounded" style="background: #f0fdf4; border-left: 3px solid #10b981;">
+            <strong class="small text-muted">Response:</strong>
+            <p class="mb-0">{{ r.response_text }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+{% elif text %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-intersect"></i>
+            <h5>No similar comments found</h5>
+            <p>Try different wording or shorter phrases.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

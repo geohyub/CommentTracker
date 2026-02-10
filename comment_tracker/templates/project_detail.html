@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}{{ project.project_code }} - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">Analytics</a></li>
+            <li class="breadcrumb-item active">{{ project.project_code }}</li>
+        </ol>
+    </nav>
+    <h1>{{ project.project_code }}</h1>
+    <p class="subtitle">{{ project.project_name }} | Client: {{ project.client }} | {{ project.report_type or '' }} {{ project.survey_type or '' }}</p>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Total Comments</div>
+            <div class="stat-value">{{ project.totals.total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Major</div>
+            <div class="stat-value text-danger">{{ project.totals.major }}</div>
+            <small class="text-muted">{{ (project.totals.major / project.totals.total * 100)|round(1) if project.totals.total > 0 else 0 }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Minor</div>
+            <div class="stat-value" style="color: var(--accent-primary);">{{ project.totals.minor }}</div>
+            <small class="text-muted">{{ (project.totals.minor / project.totals.total * 100)|round(1) if project.totals.total > 0 else 0 }}%</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Excluded</div>
+            <div class="stat-value">{{ project.totals.excluded or 0 }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Revision Trend -->
+    <div class="col-xl-7">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i>Revision Trend</div>
+            <div class="card-body">
+                {% if trend and trend.revisions|length > 0 %}
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                {% if trend.total_reduction is not none %}
+                <div class="mt-3 text-center">
+                    <span class="reduction-badge {{ 'reduction-good' if trend.total_reduction >= 70 else 'reduction-ok' if trend.total_reduction >= 40 else 'reduction-bad' }}" style="font-size: 14px; padding: 6px 16px;">
+                        Overall: &#9660; {{ trend.total_reduction }}% reduction
+                    </span>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Distribution -->
+    <div class="col-xl-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Breakdown</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revision Details Table -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-layers-fill me-2"></i>Revision Summary</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Revision</th>
+                        <th>Date</th>
+                        <th>Reviewer</th>
+                        <th>Total</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th>Reduction</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in project.revisions %}
+                    <tr>
+                        <td class="fw-500">{{ r.revision }}</td>
+                        <td>{{ r.received_date or '-' }}</td>
+                        <td>{{ r.reviewer or '-' }}</td>
+                        <td>{{ r.total }}</td>
+                        <td><span class="badge-severity badge-major">{{ r.major }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ r.minor }}</span></td>
+                        <td>
+                            {% if r.get('reduction') is not none %}
+                            <span class="reduction-badge {{ 'reduction-good' if r.reduction >= 70 else 'reduction-ok' if r.reduction >= 40 else 'reduction-bad' }}">
+                                &#9660; {{ r.reduction }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Status Distribution -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status Distribution</div>
+    <div class="card-body">
+        {% for s in project.statuses %}
+        <div class="d-flex align-items-center mb-2">
+            <span style="width: 160px;" class="small">{{ s.status }}</span>
+            <div class="progress progress-thin flex-grow-1 me-3">
+                <div class="progress-bar bg-{{ 'success' if s.status == 'Accepted' else 'warning' if 'modified' in s.status else 'info' if s.status == 'Noted' else 'danger' }}"
+                     style="width: {{ (s.count / project.totals.total * 100) if project.totals.total > 0 else 0 }}%"></div>
+            </div>
+            <span class="small fw-500" style="width: 60px;">{{ s.count }} ({{ (s.count / project.totals.total * 100)|round(1) if project.totals.total > 0 else 0 }}%)</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="text-center">
+    <a href="{{ url_for('comments_page', project=project.project_code) }}" class="btn btn-outline-primary">
+        <i class="bi bi-chat-dots-fill me-2"></i>View All Comments for {{ project.project_code }}
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Trend chart
+    const trendData = {{ trend.revisions | tojson if trend else '[]' }};
+    if (trendData.length > 0) {
+        createBarChart('trendChart',
+            trendData.map(r => r.revision),
+            [
+                {
+                    label: 'Major',
+                    data: trendData.map(r => r.major),
+                    backgroundColor: COLORS.severities.Major + 'cc',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Minor',
+                    data: trendData.map(r => r.minor),
+                    backgroundColor: COLORS.severities.Minor + 'cc',
+                    borderRadius: 4
+                }
+            ],
+            { plugins: { ...chartDefaults.plugins }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true } } }
+        );
+    }
+
+    // Category chart
+    const catData = {{ distribution.by_category | tojson }};
+    if (catData.length > 0) {
+        createDoughnutChart('categoryChart',
+            catData.map(c => c.category),
+            catData.map(c => c.count),
+            catData.map(c => COLORS.categories[c.category] || '#94a3b8')
+        );
+    }
+});
+</script>
+{% endblock %}

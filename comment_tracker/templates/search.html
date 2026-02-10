@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Search - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Search Comments</h1>
+    <p class="subtitle">Full-text search across all comments and responses</p>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-lg-5">
+                <label class="form-label">Search Query</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="q" value="{{ query }}"
+                           placeholder="Search for keywords in comments and responses..." autofocus>
+                </div>
+            </div>
+            <div class="col-lg">
+                <label class="form-label">Client</label>
+                <select class="form-select" name="client">
+                    <option value="">All</option>
+                    {% for c in options.clients %}
+                    <option value="{{ c }}" {{ 'selected' if request.args.get('client') == c }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg">
+                <label class="form-label">Severity</label>
+                <select class="form-select" name="severity">
+                    <option value="">All</option>
+                    <option value="Major" {{ 'selected' if request.args.get('severity') == 'Major' }}>Major</option>
+                    <option value="Minor" {{ 'selected' if request.args.get('severity') == 'Minor' }}>Minor</option>
+                </select>
+            </div>
+            <div class="col-lg">
+                <label class="form-label">Category</label>
+                <select class="form-select" name="category">
+                    <option value="">All</option>
+                    {% for cat in ['Technical', 'Typo', 'Readability', 'FigTable', 'Format', 'Reference'] %}
+                    <option value="{{ cat }}" {{ 'selected' if request.args.get('category') == cat }}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-auto">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if query %}
+<p class="text-muted mb-3">{{ results|length }} results for "<strong>{{ query }}</strong>"</p>
+
+{% if results %}
+{% for r in results %}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <a href="{{ url_for('comment_detail', comment_id=r.id) }}" class="fw-bold text-decoration-none">#{{ r.id }}</a>
+                <span class="text-muted mx-1">|</span>
+                <a href="{{ url_for('project_analytics', project_code=r.project_code) }}" class="text-decoration-none">{{ r.project_code }}</a>
+                <span class="text-muted">{{ r.revision }}</span>
+                <span class="text-muted mx-1">|</span>
+                <span class="text-muted">{{ r.client }}</span>
+                {% if r.section %}
+                <span class="text-muted mx-1">|</span>
+                <span class="text-muted">{{ r.section }}</span>
+                {% endif %}
+            </div>
+            <div>
+                <span class="badge-severity badge-{{ r.severity|lower }} me-1">{{ r.severity }}</span>
+                <span class="badge-category">{{ r.category }}</span>
+            </div>
+        </div>
+        <div class="search-result">
+            <p class="mb-1">{{ r.comment_text }}</p>
+            {% if r.response_text %}
+            <p class="text-muted small mb-0"><strong>Response:</strong> {{ r.response_text }}</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-search"></i>
+            <h5>No results found</h5>
+            <p>Try different search terms or adjust your filters.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

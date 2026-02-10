@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Overview of comment tracking data and trends</p>
+</div>
+
+<!-- Stat Cards Row -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Total Projects</div>
+                    <div class="stat-value">{{ info.project_count }}</div>
+                </div>
+                <div class="stat-icon blue"><i class="bi bi-folder-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Total Comments</div>
+                    <div class="stat-value">{{ info.comment_count }}</div>
+                </div>
+                <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">Review Batches</div>
+                    <div class="stat-value">{{ info.batch_count }}</div>
+                </div>
+                <div class="stat-icon purple"><i class="bi bi-layers-fill"></i></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-label">L&L Flags</div>
+                    <div class="stat-value">{{ info.ll_flag_count }}</div>
+                </div>
+                <div class="stat-icon orange"><i class="bi bi-lightbulb-fill"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if info.comment_count > 0 %}
+<div class="row g-3 mb-4">
+    <!-- Category Distribution Chart -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 280px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Severity Distribution -->
+    <div class="col-xl-4 col-lg-3">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>Severity Split</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 280px;">
+                    <canvas id="severityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="col-xl-4 col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status Distribution</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 280px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Projects Overview -->
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-folder-fill me-2"></i>Projects</span>
+                <a href="{{ url_for('projects_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Project</th>
+                                <th>Client</th>
+                                <th>Revisions</th>
+                                <th>Comments</th>
+                                <th>Reduction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in projects[:7] %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="text-decoration-none fw-500">
+                                        {{ p.project_code }}
+                                    </a>
+                                </td>
+                                <td>{{ p.client }}</td>
+                                <td>{{ p.batch_count }}</td>
+                                <td>
+                                    <span class="badge-severity badge-major me-1">{{ p.major_count }}</span>
+                                    <span class="badge-severity badge-minor">{{ p.minor_count }}</span>
+                                </td>
+                                <td>
+                                    {% if p.reduction is not none %}
+                                    <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">
+                                        &#9660; {{ p.reduction }}%
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clients Summary -->
+    <div class="col-xl-5">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-building me-2"></i>Clients</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th>Projects</th>
+                                <th>Comments</th>
+                                <th>Major</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in clients %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('client_analytics', client_name=c.client) }}" class="text-decoration-none fw-500">
+                                        {{ c.client }}
+                                    </a>
+                                </td>
+                                <td>{{ c.project_count }}</td>
+                                <td>{{ c.total_comments }}</td>
+                                <td><span class="badge-severity badge-major">{{ c.major }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Comments -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-fill me-2"></i>Recent Comments</span>
+        <a href="{{ url_for('comments_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Project</th>
+                        <th>Rev</th>
+                        <th>Comment</th>
+                        <th>Severity</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in recent %}
+                    <tr>
+                        <td><a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none">{{ c.id }}</a></td>
+                        <td>{{ c.project_code }}</td>
+                        <td>{{ c.revision }}</td>
+                        <td class="comment-text">{{ c.comment_text }}</td>
+                        <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
+                        <td><span class="badge-category">{{ c.category }}</span></td>
+                        <td>
+                            <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<!-- Empty State -->
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No Data Yet</h5>
+            <p>Start by importing your first comment file.</p>
+            <a href="{{ url_for('import_page') }}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload-fill me-2"></i>Import Data
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if info.comment_count > 0 %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Category Distribution
+    const catData = {{ distribution.by_category | tojson }};
+    if (catData.length > 0) {
+        createDoughnutChart('categoryChart',
+            catData.map(c => c.category),
+            catData.map(c => c.count),
+            catData.map(c => COLORS.categories[c.category] || '#94a3b8')
+        );
+    }
+
+    // Severity Distribution
+    const sevData = {{ distribution.by_severity | tojson }};
+    createDoughnutChart('severityChart',
+        ['Major', 'Minor'],
+        [sevData.Major || 0, sevData.Minor || 0],
+        [COLORS.severities.Major, COLORS.severities.Minor]
+    );
+
+    // Status Distribution
+    const statusData = {{ distribution.by_status | tojson }};
+    if (statusData.length > 0) {
+        createDoughnutChart('statusChart',
+            statusData.map(s => s.status),
+            statusData.map(s => s.count),
+            statusData.map(s => COLORS.statuses[s.status] || '#94a3b8')
+        );
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

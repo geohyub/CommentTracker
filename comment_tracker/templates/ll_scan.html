@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}L&L Scan - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('ll_page') }}">Lessons & Learned</a></li>
+            <li class="breadcrumb-item active">Scan Results</li>
+        </ol>
+    </nav>
+    <h1>L&L Scan Results</h1>
+    <p class="subtitle">{{ candidates|length }} potential L&L items identified</p>
+</div>
+
+{% if candidates %}
+{% for c in candidates %}
+<div class="card mb-3 ll-candidate {{ c.type|lower }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+                <span class="badge-ll-type badge-{{ c.type|lower }} me-2">{{ c.type }}</span>
+                <strong>{{ c.title }}</strong>
+            </div>
+            <span class="badge bg-primary">{{ c.occurrences }} occurrences</span>
+        </div>
+
+        <div class="row g-3 mt-1">
+            <div class="col-md-6">
+                <small class="text-muted d-block mb-1"><strong>Projects:</strong></small>
+                {% for p in c.projects %}
+                <span class="badge bg-light text-dark me-1">{{ p }}</span>
+                {% endfor %}
+            </div>
+            {% if c.clients %}
+            <div class="col-md-3">
+                <small class="text-muted d-block mb-1"><strong>Clients:</strong></small>
+                {% for cl in c.clients %}
+                <span class="badge bg-light text-dark me-1">{{ cl }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="col-md-3">
+                <small class="text-muted d-block mb-1"><strong>Category:</strong></small>
+                <span class="badge-category">{{ c.category }}</span>
+            </div>
+        </div>
+
+        {% if c.example_comments %}
+        <div class="mt-3">
+            <small class="text-muted"><strong>Example comments:</strong></small>
+            <ul class="small mt-1 mb-0">
+                {% for ex in c.example_comments[:2] %}
+                <li class="text-muted">{{ ex[:150] }}{% if ex|length > 150 %}...{% endif %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="mt-2 p-2 rounded" style="background: #f0fdf4;">
+            <small><strong>Suggested Action:</strong> {{ c.suggested_action }}</small>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-radar"></i>
+            <h5>No L&L Candidates Found</h5>
+            <p>Import more data across multiple projects to enable recurring pattern detection.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

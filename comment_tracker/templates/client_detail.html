@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}{{ client.client }} - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">Analytics</a></li>
+            <li class="breadcrumb-item active">{{ client.client }}</li>
+        </ol>
+    </nav>
+    <h1>{{ client.client }}</h1>
+    <p class="subtitle">{{ client.project_count }} projects | {{ client.total_comments }} total comments</p>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Projects</div>
+            <div class="stat-value">{{ client.project_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Avg per Project</div>
+            <div class="stat-value">{{ client.avg_comments_per_project }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Avg Reduction</div>
+            <div class="stat-value">
+                {% if client.avg_reduction is not none %}
+                {{ client.avg_reduction }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">Most Common</div>
+            <div class="stat-value" style="font-size: 20px;">
+                {% if client.most_common_category %}
+                {{ client.most_common_category.category }}
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i>Category Trend</div>
+            <div class="card-body">
+                {% if category_trend %}
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                {% else %}
+                <div class="empty-state"><p>Not enough data for trend</p></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Projects Table -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>Projects</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Project</th>
+                        <th>Type</th>
+                        <th>Revisions</th>
+                        <th>Total</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th>Reduction</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in client.projects %}
+                    <tr>
+                        <td class="fw-500">{{ p.project_code }}</td>
+                        <td>{{ p.report_type or '-' }}</td>
+                        <td>
+                            {% for r in p.revisions %}
+                            <span class="badge bg-light text-dark me-1">{{ r.revision }}: {{ r.total }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>{{ p.total_comments }}</td>
+                        <td><span class="badge-severity badge-major">{{ p.major }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ p.minor }}</span></td>
+                        <td>
+                            {% if p.reduction is not none %}
+                            <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">
+                                &#9660; {{ p.reduction }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const catData = {{ distribution.by_category | tojson }};
+    if (catData.length > 0) {
+        createDoughnutChart('categoryChart',
+            catData.map(c => c.category),
+            catData.map(c => c.count),
+            catData.map(c => COLORS.categories[c.category] || '#94a3b8')
+        );
+    }
+
+    const trendData = {{ category_trend | tojson }};
+    if (trendData.length > 0) {
+        const categories = ['Typo', 'Readability', 'FigTable', 'Format', 'Reference'];
+        const datasets = categories.map(cat => ({
+            label: cat,
+            data: trendData.map(t => t[cat] || 0),
+            borderColor: COLORS.categories[cat],
+            backgroundColor: COLORS.categories[cat] + '20',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 2,
+            pointRadius: 4
+        }));
+        createLineChart('trendChart',
+            trendData.map(t => t.period),
+            datasets
+        );
+    }
+});
+</script>
+{% endblock %}

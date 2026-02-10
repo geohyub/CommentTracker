@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Comments - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1>Comments</h1>
+        <p class="subtitle">{{ total }} comments found</p>
+    </div>
+    <div>
+        <a href="{{ url_for('export_comments', format='csv', **filters) }}" class="btn btn-outline-primary btn-sm me-2">
+            <i class="bi bi-download me-1"></i>Export CSV
+        </a>
+        <a href="{{ url_for('export_comments', format='json', **filters) }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-download me-1"></i>Export JSON
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label">Project</label>
+                <select class="form-select form-select-sm" name="project">
+                    <option value="">All</option>
+                    {% for p in options.projects %}
+                    <option value="{{ p.project_code }}" {{ 'selected' if filters.get('project') == p.project_code }}>{{ p.project_code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Client</label>
+                <select class="form-select form-select-sm" name="client">
+                    <option value="">All</option>
+                    {% for c in options.clients %}
+                    <option value="{{ c }}" {{ 'selected' if filters.get('client') == c }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md">
+                <label class="form-label">Severity</label>
+                <select class="form-select form-select-sm" name="severity">
+                    <option value="">All</option>
+                    <option value="Major" {{ 'selected' if filters.get('severity') == 'Major' }}>Major</option>
+                    <option value="Minor" {{ 'selected' if filters.get('severity') == 'Minor' }}>Minor</option>
+                </select>
+            </div>
+            <div class="col-md">
+                <label class="form-label">Category</label>
+                <select class="form-select form-select-sm" name="category">
+                    <option value="">All</option>
+                    {% for cat in ['Technical', 'Typo', 'Readability', 'FigTable', 'Format', 'Reference'] %}
+                    <option value="{{ cat }}" {{ 'selected' if filters.get('category') == cat }}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md">
+                <label class="form-label">Status</label>
+                <select class="form-select form-select-sm" name="status">
+                    <option value="">All</option>
+                    {% for s in ['Accepted', 'Accepted (modified)', 'Noted', 'Rejected'] %}
+                    <option value="{{ s }}" {{ 'selected' if filters.get('status') == s }}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md">
+                <label class="form-label">Assignee</label>
+                <select class="form-select form-select-sm" name="assignee">
+                    <option value="">All</option>
+                    {% for a in options.assignees %}
+                    <option value="{{ a }}" {{ 'selected' if filters.get('assignee') == a }}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+                <a href="{{ url_for('comments_page') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Comments Table -->
+<div class="card">
+    <div class="card-body p-0">
+        {% if comments %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Project</th>
+                        <th>Rev</th>
+                        <th>Section</th>
+                        <th>Comment</th>
+                        <th>Severity</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Assignee</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in comments %}
+                    <tr>
+                        <td><a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none fw-500">{{ c.id }}</a></td>
+                        <td><span class="text-nowrap">{{ c.project_code }}</span></td>
+                        <td>{{ c.revision }}</td>
+                        <td class="text-nowrap">{{ c.section or '-' }}</td>
+                        <td class="comment-text" title="{{ c.comment_text }}">{{ c.comment_text }}</td>
+                        <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
+                        <td><span class="badge-category">{{ c.category }}</span></td>
+                        <td>
+                            <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                        <td>{{ c.assignee or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="d-flex justify-content-center py-3">
+            <nav>
+                <ul class="pagination mb-0">
+                    {% if page > 1 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&laquo;</a></li>
+                    {% endif %}
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
+                    <li class="page-item {{ 'active' if p == page }}">
+                        <a class="page-link" href="?page={{ p }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 3 or p == page + 3 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if page < total_pages %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-chat-dots"></i>
+            <h5>No comments found</h5>
+            <p>Try adjusting your filters or import some data.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

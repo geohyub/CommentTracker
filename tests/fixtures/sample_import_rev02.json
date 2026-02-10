@@ -1,0 +1,59 @@
+{
+  "project": {
+    "project_code": "JAKO2025",
+    "project_name": "JAKO Route Survey 2025",
+    "client": "JAKO",
+    "report_type": "Processing",
+    "survey_type": "Route"
+  },
+  "batch": {
+    "revision": "Rev02",
+    "reviewer": "Client Technical Team",
+    "received_date": "2025-11-20",
+    "source_file": "JAKO_Comments_Rev02.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "Fig 5.3",
+      "comment_text": "Figure resolution still below 300 dpi on figures 5.3 and 5.7.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Accepted",
+      "response_text": "Re-exported all figures at 300 dpi. Verified in Rev 03.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "resolution"
+    },
+    {
+      "comment_number": 2,
+      "section": "6.1, p.40",
+      "comment_text": "Reference to Section 4.2 is incorrect. Should reference Section 4.3.",
+      "severity": "Minor",
+      "category": "Reference",
+      "status": "Accepted",
+      "response_text": "Cross-reference corrected to Section 4.3.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": ""
+    },
+    {
+      "comment_number": 3,
+      "section": "3.5",
+      "comment_text": "Depth values in Table 3.5 do not match the bathymetry chart in Fig 3.2. Please verify.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "Discrepancy identified due to datum offset. Table values corrected to match chart.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "bathymetry"
+    }
+  ]
+}

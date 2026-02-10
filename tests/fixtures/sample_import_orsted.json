@@ -1,0 +1,129 @@
+{
+  "project": {
+    "project_code": "ORSTED2025",
+    "project_name": "Orsted OWF Geophysical Survey 2025",
+    "client": "Orsted",
+    "report_type": "Processing",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev01",
+    "reviewer": "Orsted QC Team",
+    "received_date": "2025-10-05",
+    "source_file": "Orsted_Comments_Rev01.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "2.3",
+      "comment_text": "Figure resolution is insufficient for the A3 format prints. Minimum 300 dpi required.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Accepted",
+      "response_text": "All figures re-exported at 300 dpi.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "resolution"
+    },
+    {
+      "comment_number": 2,
+      "section": "4.1",
+      "comment_text": "Inconsistent use of 'seabed' vs 'sea bed' throughout the document.",
+      "severity": "Minor",
+      "category": "Format",
+      "status": "Accepted",
+      "response_text": "Standardized to 'seabed' throughout.",
+      "assignee": "PYS",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "terminology"
+    },
+    {
+      "comment_number": 3,
+      "section": "3.1",
+      "comment_text": "The coordinate system description mentions ETRS89 but data appears to be in WGS84. Please clarify.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Accepted (modified)",
+      "response_text": "Both systems are functionally identical for this survey area. Added clarification note.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "coordinate system"
+    },
+    {
+      "comment_number": 4,
+      "section": "5.2",
+      "comment_text": "Paragraph is difficult to follow. Please restructure for clarity.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Accepted",
+      "response_text": "Paragraph restructured into three shorter sentences.",
+      "assignee": "PYS",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": ""
+    },
+    {
+      "comment_number": 5,
+      "section": "Fig 4.5",
+      "comment_text": "Figure legend is too small to read at A4 scale. Please increase font size.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Accepted",
+      "response_text": "Legend font size increased from 6pt to 9pt.",
+      "assignee": "PYS",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": ""
+    },
+    {
+      "comment_number": 6,
+      "section": "Appendix B",
+      "comment_text": "Cross-reference to Appendix C is broken. Page number shows '??'.",
+      "severity": "Minor",
+      "category": "Reference",
+      "status": "Accepted",
+      "response_text": "Cross-reference fixed and document recompiled.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": ""
+    },
+    {
+      "comment_number": 7,
+      "section": "1.1",
+      "comment_text": "Typo: 'geophyiscal' should be 'geophysical'",
+      "severity": "Minor",
+      "category": "Typo",
+      "status": "Accepted",
+      "response_text": "Corrected.",
+      "assignee": "PYS",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": ""
+    },
+    {
+      "comment_number": 8,
+      "section": "6.3",
+      "comment_text": "The magnetic anomaly interpretation seems incorrect for anomaly M-015. Please recheck against the raw data.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "Re-examined anomaly M-015. Interpretation updated based on additional data filtering.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "magnetic,interpretation"
+    }
+  ]
+}
