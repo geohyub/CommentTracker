@@ -59,63 +59,84 @@ def create_app(db_path=None):
         if request.method == "GET":
             return render_template("import.html")
 
-        # Handle file upload
-        file = request.files.get("file")
-        if not file:
-            flash("No file selected", "error")
+        # Handle file upload (single or multiple)
+        files = request.files.getlist("file")
+        if not files or not files[0].filename:
+            flash("파일을 선택해주세요.", "error")
             return render_template("import.html")
 
         update_mode = request.form.get("update") == "on"
+        results = []
+        errors = []
 
-        try:
-            content = file.read().decode("utf-8")
-            filename = file.filename.lower()
+        for file in files:
+            try:
+                content = file.read().decode("utf-8")
+                filename = file.filename.lower()
 
-            if filename.endswith(".json"):
-                proj_data, batch_data, comments_data = importer.parse_json(content)
-            elif filename.endswith(".csv"):
-                # For CSV, metadata must be provided via form
-                proj_data = {
-                    "project_code": request.form.get("project_code", "").strip(),
-                    "project_name": request.form.get("project_name", "").strip(),
-                    "client": request.form.get("client", "").strip(),
-                    "report_type": request.form.get("report_type", "").strip() or None,
-                    "survey_type": request.form.get("survey_type", "").strip() or None,
-                }
-                batch_data = {
-                    "revision": request.form.get("revision", "").strip(),
-                    "reviewer": request.form.get("reviewer", "").strip() or None,
-                    "received_date": request.form.get("received_date", "").strip() or None,
-                    "source_file": file.filename,
-                    "comment_type": request.form.get("comment_type", "General"),
-                }
-                proj_data, batch_data, comments_data = importer.parse_csv(
-                    content, proj_data, batch_data
+                if filename.endswith(".json"):
+                    proj_data, batch_data, comments_data = importer.parse_json(content)
+                elif filename.endswith(".csv"):
+                    # For CSV, metadata must be provided via form
+                    proj_data = {
+                        "project_code": request.form.get("project_code", "").strip(),
+                        "project_name": request.form.get("project_name", "").strip(),
+                        "client": request.form.get("client", "").strip(),
+                        "report_type": request.form.get("report_type", "").strip() or None,
+                        "survey_type": request.form.get("survey_type", "").strip() or None,
+                    }
+                    batch_data = {
+                        "revision": request.form.get("revision", "").strip(),
+                        "reviewer": request.form.get("reviewer", "").strip() or None,
+                        "received_date": request.form.get("received_date", "").strip() or None,
+                        "source_file": file.filename,
+                        "comment_type": request.form.get("comment_type", "General"),
+                    }
+                    proj_data, batch_data, comments_data = importer.parse_csv(
+                        content, proj_data, batch_data
+                    )
+                else:
+                    errors.append(f"{file.filename}: 지원하지 않는 파일 형식 (JSON/CSV만 가능)")
+                    continue
+
+                result = importer.import_data(
+                    proj_data, batch_data, comments_data,
+                    db_path=get_db(), update=update_mode
+                )
+                results.append(result)
+
+            except importer.ImportError as e:
+                errors.append(f"{file.filename}: {str(e)}")
+            except Exception as e:
+                errors.append(f"{file.filename}: {str(e)}")
+
+        # Flash results
+        if results:
+            total_comments = sum(r["total"] for r in results)
+            total_major = sum(r["major"] for r in results)
+            total_minor = sum(r["minor"] for r in results)
+            if len(results) == 1:
+                r = results[0]
+                flash(
+                    f"{r['total']}건 코멘트 임포트 완료 "
+                    f"({r['major']} Major, {r['minor']} Minor) "
+                    f"[{r['comment_type']}] "
+                    f"{r['project_code']} {r['revision']}",
+                    "success"
                 )
             else:
-                flash("Unsupported file format. Use JSON or CSV.", "error")
-                return render_template("import.html")
+                flash(
+                    f"{len(results)}개 파일에서 총 {total_comments}건 코멘트 임포트 완료 "
+                    f"({total_major} Major, {total_minor} Minor)",
+                    "success"
+                )
 
-            result = importer.import_data(
-                proj_data, batch_data, comments_data,
-                db_path=get_db(), update=update_mode
-            )
+        for err in errors:
+            flash(err, "error")
 
-            flash(
-                f"Imported {result['total']} comments "
-                f"({result['major']} Major, {result['minor']} Minor) "
-                f"[{result['comment_type']}] "
-                f"for {result['project_code']} {result['revision']}.",
-                "success"
-            )
+        if results:
             return redirect(url_for("dashboard"))
-
-        except importer.ImportError as e:
-            flash(str(e), "error")
-            return render_template("import.html")
-        except Exception as e:
-            flash(f"Import failed: {str(e)}", "error")
-            return render_template("import.html")
+        return render_template("import.html")
 
     # ─── Comments ───────────────────────────────────────────────
     @app.route("/comments")

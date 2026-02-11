@@ -158,6 +158,25 @@ def get_all_projects_summary(db_path=None):
         pd["comment_types"] = [t["comment_type"] for t in types]
         pd["type_count"] = len(pd["comment_types"])
 
+        # Status counts for open/closed display
+        statuses = conn.execute(
+            """SELECT c.status, COUNT(*) as cnt
+               FROM comments c
+               JOIN batches b ON c.batch_id = b.id
+               WHERE b.project_id = ?
+               GROUP BY c.status""",
+            (pd["id"],)
+        ).fetchall()
+        status_map = {r["status"]: r["cnt"] for r in statuses}
+        pd["accepted_count"] = status_map.get("Accepted", 0)
+        pd["modified_count"] = status_map.get("Accepted (modified)", 0)
+        pd["noted_count"] = status_map.get("Noted", 0)
+        pd["rejected_count"] = status_map.get("Rejected", 0)
+        pd["closed_count"] = pd["accepted_count"] + pd["modified_count"]
+        pd["open_count"] = pd["noted_count"] + pd["rejected_count"]
+        total = pd["total_comments"] or 0
+        pd["closed_rate"] = round(pd["closed_count"] / total * 100) if total > 0 else 0
+
         results.append(pd)
 
     conn.close()

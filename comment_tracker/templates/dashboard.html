@@ -109,8 +109,8 @@
                             <tr>
                                 <th>프로젝트</th>
                                 <th>클라이언트</th>
-                                <th>리비전</th>
                                 <th>코멘트</th>
+                                <th>처리율</th>
                                 <th>감소율</th>
                             </tr>
                         </thead>
@@ -123,10 +123,19 @@
                                     </a>
                                 </td>
                                 <td>{{ p.client }}</td>
-                                <td>{{ p.batch_count }}</td>
                                 <td>
                                     <span class="badge-severity badge-major me-1">{{ p.major_count }}</span>
                                     <span class="badge-severity badge-minor">{{ p.minor_count }}</span>
+                                </td>
+                                <td>
+                                    {% if p.total_comments %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress-thin flex-grow-1" style="min-width:60px">
+                                            <div class="progress-bar bg-success" style="width: {{ p.closed_rate }}%"></div>
+                                        </div>
+                                        <span class="small fw-500 text-nowrap">{{ p.closed_rate }}%</span>
+                                    </div>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if p.reduction is not none %}

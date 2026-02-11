@@ -35,41 +35,54 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadArea.classList.remove('dragover');
             if (e.dataTransfer.files.length) {
                 fileInput.files = e.dataTransfer.files;
-                handleFileSelect(e.dataTransfer.files[0]);
+                handleFileSelect(e.dataTransfer.files);
             }
         });
 
         fileInput.addEventListener('change', function() {
             if (fileInput.files.length) {
-                handleFileSelect(fileInput.files[0]);
+                handleFileSelect(fileInput.files);
             }
         });
     }
 });
 
-function handleFileSelect(file) {
+function handleFileSelect(files) {
     const uploadArea = document.querySelector('.upload-area');
-    const fileName = document.getElementById('fileName');
     const csvFields = document.getElementById('csvFields');
+    const fileList = document.getElementById('fileList');
+    const fileListItems = document.getElementById('fileListItems');
 
-    if (fileName) {
-        fileName.textContent = file.name;
-    }
-    if (uploadArea) {
-        uploadArea.innerHTML = `
-            <i class="bi bi-file-earmark-check" style="color: #10b981;"></i>
-            <h5>${file.name}</h5>
-            <p class="text-muted mb-0">${(file.size / 1024).toFixed(1)} KB - Ready to import</p>
-        `;
-    }
+    const totalSize = Array.from(files).reduce((sum, f) => sum + f.size, 0);
+    const hasCSV = Array.from(files).some(f => f.name.toLowerCase().endsWith('.csv'));
 
-    // Show CSV metadata fields if CSV file
-    if (csvFields) {
-        if (file.name.toLowerCase().endsWith('.csv')) {
-            csvFields.style.display = 'block';
-        } else {
-            csvFields.style.display = 'none';
+    if (files.length === 1) {
+        if (uploadArea) {
+            uploadArea.innerHTML = `
+                <i class="bi bi-file-earmark-check" style="color: #10b981;"></i>
+                <h5>${files[0].name}</h5>
+                <p class="text-muted mb-0">${(files[0].size / 1024).toFixed(1)} KB - 임포트 준비 완료</p>
+            `;
         }
+    } else {
+        if (uploadArea) {
+            uploadArea.innerHTML = `
+                <i class="bi bi-files" style="color: #10b981;"></i>
+                <h5>${files.length}개 파일 선택됨</h5>
+                <p class="text-muted mb-0">총 ${(totalSize / 1024).toFixed(1)} KB - 임포트 준비 완료</p>
+            `;
+        }
+        if (fileList && fileListItems) {
+            fileList.style.display = 'block';
+            fileListItems.innerHTML = Array.from(files).map(f =>
+                `<span class="badge bg-light text-dark me-1 mb-1">${f.name} (${(f.size / 1024).toFixed(1)}KB)</span>`
+            ).join('');
+        }
+    }
+
+    // Show CSV metadata fields if any CSV file selected
+    if (csvFields) {
+        csvFields.style.display = hasCSV ? 'block' : 'none';
     }
 }
 
