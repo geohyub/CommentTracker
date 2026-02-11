@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Analytics - Comment Tracker{% endblock %}
+{% block title %}통계 분석 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
-        <h1>Analytics</h1>
-        <p class="subtitle">Cross-project analytics and trends</p>
+        <h1>통계 분석</h1>
+        <p class="subtitle">프로젝트 간 분석 및 트렌드</p>
     </div>
     <a href="{{ url_for('export_excel') }}" class="btn btn-outline-primary">
-        <i class="bi bi-file-earmark-excel-fill me-2"></i>Export Excel Report
+        <i class="bi bi-file-earmark-excel-fill me-2"></i>Excel 리포트 내보내기
     </a>
 </div>
 
@@ -17,7 +17,7 @@
     <!-- Category Distribution -->
     <div class="col-xl-6">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Overall Category Distribution</div>
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>전체 카테고리 분포</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="categoryChart"></canvas>
@@ -29,7 +29,7 @@
     <!-- Severity / Status -->
     <div class="col-xl-3">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>Severity</div>
+            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>심각도</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="severityChart"></canvas>
@@ -39,7 +39,7 @@
     </div>
     <div class="col-xl-3">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status</div>
+            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>상태</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="statusChart"></canvas>
@@ -52,7 +52,7 @@
 <!-- Category Trend by Period -->
 {% if category_trend %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-graph-up me-2"></i>Category Trend by Period</div>
+    <div class="card-header"><i class="bi bi-graph-up me-2"></i>기간별 카테고리 트렌드</div>
     <div class="card-body">
         <div class="chart-container" style="height: 350px;">
             <canvas id="trendChart"></canvas>
@@ -63,20 +63,20 @@
 
 <!-- Projects Comparison -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-bar-chart-fill me-2"></i>Project Comparison</div>
+    <div class="card-header"><i class="bi bi-bar-chart-fill me-2"></i>프로젝트 비교</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Project</th>
-                        <th>Client</th>
-                        <th>Type</th>
-                        <th>Revisions</th>
-                        <th>Total</th>
+                        <th>프로젝트</th>
+                        <th>클라이언트</th>
+                        <th>유형</th>
+                        <th>리비전</th>
+                        <th>전체</th>
                         <th>Major</th>
                         <th>Minor</th>
-                        <th>Reduction</th>
+                        <th>감소율</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -99,7 +99,7 @@
                             <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
-                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">상세</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -111,17 +111,17 @@
 <!-- Recurring Themes -->
 {% if themes %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-arrow-repeat me-2"></i>Recurring Themes</div>
+    <div class="card-header"><i class="bi bi-arrow-repeat me-2"></i>반복 테마</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Theme</th>
-                        <th>Occurrences</th>
-                        <th>Projects</th>
-                        <th>Clients</th>
-                        <th>Category</th>
+                        <th>테마</th>
+                        <th>발생횟수</th>
+                        <th>프로젝트</th>
+                        <th>클라이언트</th>
+                        <th>카테고리</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,16 +143,16 @@
 
 <!-- Clients Comparison -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-building me-2"></i>Client Comparison</div>
+    <div class="card-header"><i class="bi bi-building me-2"></i>클라이언트 비교</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Client</th>
-                        <th>Projects</th>
-                        <th>Batches</th>
-                        <th>Total Comments</th>
+                        <th>클라이언트</th>
+                        <th>프로젝트</th>
+                        <th>배치</th>
+                        <th>전체 코멘트</th>
                         <th>Major</th>
                         <th>Minor</th>
                         <th></th>
@@ -167,7 +167,7 @@
                         <td>{{ c.total_comments }}</td>
                         <td><span class="badge-severity badge-major">{{ c.major }}</span></td>
                         <td><span class="badge-severity badge-minor">{{ c.minor }}</span></td>
-                        <td><a href="{{ url_for('client_analytics', client_name=c.client) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                        <td><a href="{{ url_for('client_analytics', client_name=c.client) }}" class="btn btn-sm btn-outline-primary">상세</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -181,9 +181,9 @@
     <div class="card-body">
         <div class="empty-state">
             <i class="bi bi-bar-chart"></i>
-            <h5>No analytics data yet</h5>
-            <p>Import comment data to see analytics.</p>
-            <a href="{{ url_for('import_page') }}" class="btn btn-primary">Import Data</a>
+            <h5>분석 데이터가 없습니다</h5>
+            <p>코멘트 데이터를 임포트하면 분석을 확인할 수 있습니다.</p>
+            <a href="{{ url_for('import_page') }}" class="btn btn-primary">데이터 임포트</a>
         </div>
     </div>
 </div>

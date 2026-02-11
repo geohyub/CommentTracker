@@ -1,4 +1,4 @@
-"""Excel multi-tab report generation."""
+"""Excel 다중 탭 리포트 생성."""
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -10,24 +10,18 @@ from ..analytics.trend import get_category_trend_by_period
 from ..analytics.recurring import find_recurring_themes
 
 
-# Style constants
 HEADER_FONT = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
 HEADER_FILL = PatternFill(start_color="2C3E50", end_color="2C3E50", fill_type="solid")
-SUBHEADER_FILL = PatternFill(start_color="34495E", end_color="34495E", fill_type="solid")
-ACCENT_FILL = PatternFill(start_color="3498DB", end_color="3498DB", fill_type="solid")
 GOOD_FILL = PatternFill(start_color="D5F5E3", end_color="D5F5E3", fill_type="solid")
 WARN_FILL = PatternFill(start_color="FDEBD0", end_color="FDEBD0", fill_type="solid")
 BAD_FILL = PatternFill(start_color="FADBD8", end_color="FADBD8", fill_type="solid")
 THIN_BORDER = Border(
-    left=Side(style="thin"),
-    right=Side(style="thin"),
-    top=Side(style="thin"),
-    bottom=Side(style="thin"),
+    left=Side(style="thin"), right=Side(style="thin"),
+    top=Side(style="thin"), bottom=Side(style="thin"),
 )
 
 
 def style_header_row(ws, row, col_count):
-    """Apply header styling to a row."""
     for col in range(1, col_count + 1):
         cell = ws.cell(row=row, column=col)
         cell.font = HEADER_FONT
@@ -37,7 +31,6 @@ def style_header_row(ws, row, col_count):
 
 
 def auto_width(ws):
-    """Auto-adjust column widths."""
     for col in ws.columns:
         max_length = 0
         col_letter = get_column_letter(col[0].column)
@@ -51,55 +44,54 @@ def auto_width(ws):
 
 
 def generate_stats_report(output_path, client=None, db_path=None):
-    """Generate full Excel stats report with 5 tabs."""
+    """5개 탭의 Excel 통계 리포트 생성."""
     wb = Workbook()
 
-    # Tab 1: Overview
+    # 탭 1: 개요
     ws1 = wb.active
-    ws1.title = "Overview"
+    ws1.title = "개요"
     info = get_db_info(db_path)
 
-    ws1.append(["Comment Tracker Statistics Report"])
+    ws1.append(["Comment Tracker 통계 리포트"])
     ws1.merge_cells("A1:B1")
     ws1.cell(1, 1).font = Font(name="Calibri", bold=True, size=16)
 
     ws1.append([])
-    headers = ["Metric", "Value"]
-    ws1.append(headers)
+    ws1.append(["항목", "값"])
     style_header_row(ws1, 3, 2)
 
-    ws1.append(["Total Projects", info["project_count"]])
-    ws1.append(["Total Batches", info["batch_count"]])
-    ws1.append(["Total Comments", info["comment_count"]])
-    ws1.append(["L&L Flags", info["ll_flag_count"]])
-    ws1.append(["Date Range", f"{info['date_from'] or 'N/A'} to {info['date_to'] or 'N/A'}"])
-    ws1.append(["Clients", ", ".join(info["clients"]) if info["clients"] else "N/A"])
+    ws1.append(["전체 프로젝트", info["project_count"]])
+    ws1.append(["전체 배치", info["batch_count"]])
+    ws1.append(["전체 코멘트", info["comment_count"]])
+    ws1.append(["L&L 플래그", info["ll_flag_count"]])
+    ws1.append(["기간", f"{info['date_from'] or 'N/A'} ~ {info['date_to'] or 'N/A'}"])
+    ws1.append(["클라이언트", ", ".join(info["clients"]) if info["clients"] else "없음"])
 
     for row in ws1.iter_rows(min_row=4, max_row=ws1.max_row, max_col=2):
         for cell in row:
             cell.border = THIN_BORDER
     auto_width(ws1)
 
-    # Tab 2: By Project
-    ws2 = wb.create_sheet("By Project")
+    # 탭 2: 프로젝트별
+    ws2 = wb.create_sheet("프로젝트별")
     projects = get_all_projects_summary(db_path)
-    proj_headers = ["Project", "Client", "Type", "Revisions", "Total", "Major", "Minor", "Reduction %"]
+    proj_headers = ["프로젝트", "클라이언트", "유형", "코멘트 종류", "리비전수", "전체", "Major", "Minor", "감소율"]
     ws2.append(proj_headers)
     style_header_row(ws2, 1, len(proj_headers))
 
     for p in projects:
         reduction = f"{p['reduction']}%" if p.get("reduction") is not None else "N/A"
+        comment_types = ", ".join(p.get("comment_types", [])) if p.get("comment_types") else "-"
         ws2.append([
             p["project_code"], p["client"], p.get("report_type", ""),
-            p["batch_count"], p["total_comments"],
+            comment_types, p["batch_count"], p["total_comments"],
             p["major_count"], p["minor_count"], reduction
         ])
 
     for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, max_col=len(proj_headers)):
         for cell in row:
             cell.border = THIN_BORDER
-        # Color reduction column
-        red_cell = row[7]
+        red_cell = row[len(proj_headers) - 1]
         try:
             val = int(str(red_cell.value).replace("%", "").replace("N/A", "-1"))
             if val >= 70:
@@ -112,10 +104,10 @@ def generate_stats_report(output_path, client=None, db_path=None):
             pass
     auto_width(ws2)
 
-    # Tab 3: By Client
-    ws3 = wb.create_sheet("By Client")
+    # 탭 3: 클라이언트별
+    ws3 = wb.create_sheet("클라이언트별")
     clients = get_all_clients_summary(db_path)
-    client_headers = ["Client", "Projects", "Total Comments", "Major", "Minor", "Avg per Project"]
+    client_headers = ["클라이언트", "프로젝트수", "전체 코멘트", "Major", "Minor", "프로젝트당 평균"]
     ws3.append(client_headers)
     style_header_row(ws3, 1, len(client_headers))
 
@@ -131,10 +123,10 @@ def generate_stats_report(output_path, client=None, db_path=None):
             cell.border = THIN_BORDER
     auto_width(ws3)
 
-    # Tab 4: Category Trend
-    ws4 = wb.create_sheet("Category Trend")
+    # 탭 4: 카테고리 트렌드
+    ws4 = wb.create_sheet("카테고리 트렌드")
     trend_data = get_category_trend_by_period(client=client, db_path=db_path)
-    trend_headers = ["Period", "Typo", "Readability", "FigTable", "Format", "Reference", "Total Minor"]
+    trend_headers = ["기간", "오타/문법", "가독성", "그림/표", "서식/용어", "참조/목차", "Minor 합계"]
     ws4.append(trend_headers)
     style_header_row(ws4, 1, len(trend_headers))
 
@@ -149,10 +141,10 @@ def generate_stats_report(output_path, client=None, db_path=None):
             cell.border = THIN_BORDER
     auto_width(ws4)
 
-    # Tab 5: Recurring Themes
-    ws5 = wb.create_sheet("Recurring Themes")
+    # 탭 5: 반복 테마
+    ws5 = wb.create_sheet("반복 테마")
     themes = find_recurring_themes(db_path=db_path)
-    theme_headers = ["Theme", "Occurrences", "Projects", "Clients", "Category"]
+    theme_headers = ["테마", "발생횟수", "프로젝트", "클라이언트", "카테고리"]
     ws5.append(theme_headers)
     style_header_row(ws5, 1, len(theme_headers))
 

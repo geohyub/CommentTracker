@@ -63,7 +63,7 @@ class TestAnalytics(unittest.TestCase):
         self.assertEqual(len(clients), 2)  # JAKO, Orsted
 
     def test_project_trend(self):
-        trend = get_project_trend("JAKO2025", self.db_path)
+        trend = get_project_trend("JAKO2025", db_path=self.db_path)
         self.assertIsNotNone(trend)
         self.assertEqual(len(trend["revisions"]), 2)
         self.assertIsNotNone(trend["total_reduction"])

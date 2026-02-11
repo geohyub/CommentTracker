@@ -8,6 +8,7 @@
   },
   "batch": {
     "revision": "Rev01",
+    "comment_type": "Processing",
     "reviewer": "Orsted QC Team",
     "received_date": "2025-10-05",
     "source_file": "Orsted_Comments_Rev01.xlsx"

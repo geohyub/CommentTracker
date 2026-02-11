@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Comments - Comment Tracker{% endblock %}
+{% block title %}코멘트 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
-        <h1>Comments</h1>
-        <p class="subtitle">{{ total }} comments found</p>
+        <h1>코멘트</h1>
+        <p class="subtitle">{{ total }} 건 검색됨</p>
     </div>
     <div>
         <a href="{{ url_for('export_comments', format='csv', **filters) }}" class="btn btn-outline-primary btn-sm me-2">
-            <i class="bi bi-download me-1"></i>Export CSV
+            <i class="bi bi-download me-1"></i>CSV 내보내기
         </a>
         <a href="{{ url_for('export_comments', format='json', **filters) }}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-download me-1"></i>Export JSON
+            <i class="bi bi-download me-1"></i>JSON 내보내기
         </a>
     </div>
 </div>
@@ -22,61 +22,70 @@
     <div class="card-body py-3">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-2">
-                <label class="form-label">Project</label>
+                <label class="form-label">프로젝트</label>
                 <select class="form-select form-select-sm" name="project">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     {% for p in options.projects %}
                     <option value="{{ p.project_code }}" {{ 'selected' if filters.get('project') == p.project_code }}>{{ p.project_code }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Client</label>
+                <label class="form-label">클라이언트</label>
                 <select class="form-select form-select-sm" name="client">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     {% for c in options.clients %}
                     <option value="{{ c }}" {{ 'selected' if filters.get('client') == c }}>{{ c }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md">
-                <label class="form-label">Severity</label>
+                <label class="form-label">심각도</label>
                 <select class="form-select form-select-sm" name="severity">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     <option value="Major" {{ 'selected' if filters.get('severity') == 'Major' }}>Major</option>
                     <option value="Minor" {{ 'selected' if filters.get('severity') == 'Minor' }}>Minor</option>
                 </select>
             </div>
             <div class="col-md">
-                <label class="form-label">Category</label>
+                <label class="form-label">카테고리</label>
                 <select class="form-select form-select-sm" name="category">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     {% for cat in ['Technical', 'Typo', 'Readability', 'FigTable', 'Format', 'Reference'] %}
                     <option value="{{ cat }}" {{ 'selected' if filters.get('category') == cat }}>{{ cat }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md">
-                <label class="form-label">Status</label>
+                <label class="form-label">종류</label>
+                <select class="form-select form-select-sm" name="comment_type">
+                    <option value="">전체</option>
+                    {% for ct in options.comment_types %}
+                    <option value="{{ ct }}" {{ 'selected' if filters.get('comment_type') == ct }}>{{ ct }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md">
+                <label class="form-label">상태</label>
                 <select class="form-select form-select-sm" name="status">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     {% for s in ['Accepted', 'Accepted (modified)', 'Noted', 'Rejected'] %}
                     <option value="{{ s }}" {{ 'selected' if filters.get('status') == s }}>{{ s }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md">
-                <label class="form-label">Assignee</label>
+                <label class="form-label">담당자</label>
                 <select class="form-select form-select-sm" name="assignee">
-                    <option value="">All</option>
+                    <option value="">전체</option>
                     {% for a in options.assignees %}
                     <option value="{{ a }}" {{ 'selected' if filters.get('assignee') == a }}>{{ a }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-auto">
-                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
-                <a href="{{ url_for('comments_page') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>필터</button>
+                <a href="{{ url_for('comments_page') }}" class="btn btn-outline-secondary btn-sm">초기화</a>
             </div>
         </form>
     </div>
@@ -91,14 +100,15 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Project</th>
-                        <th>Rev</th>
-                        <th>Section</th>
-                        <th>Comment</th>
-                        <th>Severity</th>
-                        <th>Category</th>
-                        <th>Status</th>
-                        <th>Assignee</th>
+                        <th>프로젝트</th>
+                        <th>리비전</th>
+                        <th>섹션</th>
+                        <th>코멘트</th>
+                        <th>종류</th>
+                        <th>심각도</th>
+                        <th>카테고리</th>
+                        <th>상태</th>
+                        <th>담당자</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,6 +119,7 @@
                         <td>{{ c.revision }}</td>
                         <td class="text-nowrap">{{ c.section or '-' }}</td>
                         <td class="comment-text" title="{{ c.comment_text }}">{{ c.comment_text }}</td>
+                        <td>{{ c.comment_type or '-' }}</td>
                         <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
                         <td><span class="badge-category">{{ c.category }}</span></td>
                         <td>
@@ -151,8 +162,8 @@
         {% else %}
         <div class="empty-state">
             <i class="bi bi-chat-dots"></i>
-            <h5>No comments found</h5>
-            <p>Try adjusting your filters or import some data.</p>
+            <h5>코멘트가 없습니다</h5>
+            <p>필터를 조정하거나 데이터를 임포트하세요.</p>
         </div>
         {% endif %}
     </div>

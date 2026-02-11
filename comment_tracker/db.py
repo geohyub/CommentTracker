@@ -22,10 +22,11 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
--- Comment batches (one per review cycle / revision)
+-- Comment batches (one per comment type + revision cycle)
 CREATE TABLE IF NOT EXISTS batches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id),
+    comment_type TEXT NOT NULL DEFAULT 'General',
     revision TEXT NOT NULL,
     reviewer TEXT,
     received_date TEXT,
@@ -33,7 +34,7 @@ CREATE TABLE IF NOT EXISTS batches (
     total_comments INTEGER,
     notes TEXT,
     created_at TEXT DEFAULT (datetime('now')),
-    UNIQUE(project_id, revision)
+    UNIQUE(project_id, comment_type, revision)
 );
 
 -- Individual comments

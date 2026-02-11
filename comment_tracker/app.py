@@ -14,6 +14,7 @@ from . import importer
 from . import search
 from .analytics import project_stats, client_stats, trend, distribution, recurring, bsc
 from .ll import scanner, flagger, exporter
+from .models import LABELS_KO, VALID_COMMENT_TYPES
 from .reporters import excel
 
 
@@ -27,6 +28,9 @@ def create_app(db_path=None):
 
     # Initialize database
     database.init_db(db_path)
+
+    app.jinja_env.globals['LABELS_KO'] = LABELS_KO
+    app.jinja_env.globals['VALID_COMMENT_TYPES'] = VALID_COMMENT_TYPES
 
     def get_db():
         return app.config["DB_PATH"]
@@ -83,6 +87,7 @@ def create_app(db_path=None):
                     "reviewer": request.form.get("reviewer", "").strip() or None,
                     "received_date": request.form.get("received_date", "").strip() or None,
                     "source_file": file.filename,
+                    "comment_type": request.form.get("comment_type", "General"),
                 }
                 proj_data, batch_data, comments_data = importer.parse_csv(
                     content, proj_data, batch_data
@@ -99,6 +104,7 @@ def create_app(db_path=None):
             flash(
                 f"Imported {result['total']} comments "
                 f"({result['major']} Major, {result['minor']} Minor) "
+                f"[{result['comment_type']}] "
                 f"for {result['project_code']} {result['revision']}.",
                 "success"
             )
@@ -117,7 +123,7 @@ def create_app(db_path=None):
         page = request.args.get("page", 1, type=int)
         per_page = 30
         filters = {}
-        for key in ["project", "client", "revision", "severity", "category", "status", "assignee"]:
+        for key in ["project", "client", "revision", "severity", "category", "status", "assignee", "comment_type"]:
             val = request.args.get(key)
             if val:
                 filters[key] = val
@@ -158,7 +164,7 @@ def create_app(db_path=None):
         results = []
         if query:
             filters = {}
-            for key in ["client", "project", "severity", "category", "status"]:
+            for key in ["client", "project", "severity", "category", "status", "comment_type"]:
                 val = request.args.get(key)
                 if val:
                     filters[key] = val
@@ -203,7 +209,7 @@ def create_app(db_path=None):
             flash("Project not found", "error")
             return redirect(url_for("analytics_page"))
 
-        trend_data = trend.get_project_trend(project_code, get_db())
+        trend_data = trend.get_project_trend(project_code, db_path=get_db())
         dist = distribution.get_category_distribution(
             project_code=project_code, db_path=get_db()
         )
@@ -306,7 +312,7 @@ def create_app(db_path=None):
     @app.route("/export/comments")
     def export_comments():
         filters = {}
-        for key in ["project", "client", "revision", "severity", "category", "status", "assignee"]:
+        for key in ["project", "client", "revision", "severity", "category", "status", "assignee", "comment_type"]:
             val = request.args.get(key)
             if val:
                 filters[key] = val

@@ -3,23 +3,86 @@
 from .db import get_connection
 
 
+def _add_common_filters(sql, count_sql, params, filters):
+    """Add common filter clauses to SQL queries."""
+    if not filters:
+        return sql, count_sql, params
+    if filters.get("project"):
+        clause = " AND p.project_code = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["project"])
+    if filters.get("client"):
+        clause = " AND p.client = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["client"])
+    if filters.get("comment_type"):
+        clause = " AND b.comment_type = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["comment_type"])
+    if filters.get("revision"):
+        clause = " AND b.revision = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["revision"])
+    if filters.get("severity"):
+        clause = " AND c.severity = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["severity"])
+    if filters.get("category"):
+        clause = " AND c.category = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["category"])
+    if filters.get("status"):
+        clause = " AND c.status = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["status"])
+    if filters.get("assignee"):
+        clause = " AND c.assignee = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["assignee"])
+    if filters.get("excluded") is not None:
+        clause = " AND c.excluded = ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(int(filters["excluded"]))
+    if filters.get("date_from"):
+        clause = " AND b.received_date >= ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["date_from"])
+    if filters.get("date_to"):
+        clause = " AND b.received_date <= ?"
+        sql += clause
+        if count_sql:
+            count_sql += clause
+        params.append(filters["date_to"])
+    return sql, count_sql, params
+
+
 def full_text_search(query, filters=None, limit=50, db_path=None):
-    """Search comments using FTS5 full-text search with optional filters.
-
-    Args:
-        query: Search query string
-        filters: Dict with optional keys: client, project, severity, category, status, assignee
-        limit: Max results to return
-
-    Returns:
-        List of dicts with comment data plus project/batch context
-    """
+    """Search comments using FTS5 full-text search with optional filters."""
     conn = get_connection(db_path)
-    # Clean the query for FTS5
     fts_query = " OR ".join(w for w in query.split() if w.strip())
 
     sql = """
-        SELECT c.*, b.revision, b.received_date, b.reviewer,
+        SELECT c.*, b.comment_type, b.revision, b.received_date, b.reviewer,
                p.project_code, p.project_name, p.client, p.report_type,
                rank
         FROM comments_fts fts
@@ -29,26 +92,7 @@ def full_text_search(query, filters=None, limit=50, db_path=None):
         WHERE comments_fts MATCH ?
     """
     params = [fts_query]
-
-    if filters:
-        if filters.get("client"):
-            sql += " AND p.client = ?"
-            params.append(filters["client"])
-        if filters.get("project"):
-            sql += " AND p.project_code = ?"
-            params.append(filters["project"])
-        if filters.get("severity"):
-            sql += " AND c.severity = ?"
-            params.append(filters["severity"])
-        if filters.get("category"):
-            sql += " AND c.category = ?"
-            params.append(filters["category"])
-        if filters.get("status"):
-            sql += " AND c.status = ?"
-            params.append(filters["status"])
-        if filters.get("assignee"):
-            sql += " AND c.assignee = ?"
-            params.append(filters["assignee"])
+    sql, _, params = _add_common_filters(sql, None, params, filters)
 
     sql += " ORDER BY rank LIMIT ?"
     params.append(limit)
@@ -60,26 +104,19 @@ def full_text_search(query, filters=None, limit=50, db_path=None):
 
 
 def find_similar(text, limit=10, db_path=None):
-    """Find similar past comments using FTS5 ranking.
-
-    Args:
-        text: Comment text to find similar matches for
-        limit: Max results
-
-    Returns:
-        List of dicts with similar comments and their context
-    """
+    """Find similar past comments using FTS5 ranking."""
     conn = get_connection(db_path)
-    # Extract significant words for matching
-    words = [w for w in text.split() if len(w) > 2]
+    import re
+    words = [re.sub(r'[^\w]', '', w) for w in text.split()]
+    words = [w for w in words if len(w) > 2]
     if not words:
         conn.close()
         return []
 
-    fts_query = " OR ".join(words[:20])  # Limit to avoid overly complex queries
+    fts_query = " OR ".join(words[:20])
 
     sql = """
-        SELECT c.*, b.revision, b.received_date,
+        SELECT c.*, b.comment_type, b.revision, b.received_date,
                p.project_code, p.project_name, p.client,
                rank
         FROM comments_fts fts
@@ -98,17 +135,7 @@ def find_similar(text, limit=10, db_path=None):
 
 
 def list_comments(filters=None, limit=200, offset=0, db_path=None):
-    """List comments with optional filters.
-
-    Args:
-        filters: Dict with optional keys: project, client, revision, severity, category,
-                 status, assignee, excluded, date_from, date_to
-        limit: Max results
-        offset: Pagination offset
-
-    Returns:
-        List of dicts, total count
-    """
+    """List comments with optional filters. Returns (list, total_count)."""
     conn = get_connection(db_path)
 
     count_sql = """
@@ -119,7 +146,7 @@ def list_comments(filters=None, limit=200, offset=0, db_path=None):
         WHERE 1=1
     """
     sql = """
-        SELECT c.*, b.revision, b.received_date, b.reviewer,
+        SELECT c.*, b.comment_type, b.revision, b.received_date, b.reviewer,
                p.project_code, p.project_name, p.client, p.report_type
         FROM comments c
         JOIN batches b ON c.batch_id = b.id
@@ -127,48 +154,7 @@ def list_comments(filters=None, limit=200, offset=0, db_path=None):
         WHERE 1=1
     """
     params = []
-
-    if filters:
-        if filters.get("project"):
-            sql += " AND p.project_code = ?"
-            count_sql += " AND p.project_code = ?"
-            params.append(filters["project"])
-        if filters.get("client"):
-            sql += " AND p.client = ?"
-            count_sql += " AND p.client = ?"
-            params.append(filters["client"])
-        if filters.get("revision"):
-            sql += " AND b.revision = ?"
-            count_sql += " AND b.revision = ?"
-            params.append(filters["revision"])
-        if filters.get("severity"):
-            sql += " AND c.severity = ?"
-            count_sql += " AND c.severity = ?"
-            params.append(filters["severity"])
-        if filters.get("category"):
-            sql += " AND c.category = ?"
-            count_sql += " AND c.category = ?"
-            params.append(filters["category"])
-        if filters.get("status"):
-            sql += " AND c.status = ?"
-            count_sql += " AND c.status = ?"
-            params.append(filters["status"])
-        if filters.get("assignee"):
-            sql += " AND c.assignee = ?"
-            count_sql += " AND c.assignee = ?"
-            params.append(filters["assignee"])
-        if filters.get("excluded") is not None:
-            sql += " AND c.excluded = ?"
-            count_sql += " AND c.excluded = ?"
-            params.append(int(filters["excluded"]))
-        if filters.get("date_from"):
-            sql += " AND b.received_date >= ?"
-            count_sql += " AND b.received_date >= ?"
-            params.append(filters["date_from"])
-        if filters.get("date_to"):
-            sql += " AND b.received_date <= ?"
-            count_sql += " AND b.received_date <= ?"
-            params.append(filters["date_to"])
+    sql, count_sql, params = _add_common_filters(sql, count_sql, params, filters)
 
     total = conn.execute(count_sql, params).fetchone()[0]
 
@@ -185,7 +171,7 @@ def get_comment_detail(comment_id, db_path=None):
     """Get full detail for a single comment."""
     conn = get_connection(db_path)
     row = conn.execute(
-        """SELECT c.*, b.revision, b.received_date, b.reviewer, b.source_file,
+        """SELECT c.*, b.comment_type, b.revision, b.received_date, b.reviewer, b.source_file,
                   p.project_code, p.project_name, p.client, p.report_type, p.survey_type
            FROM comments c
            JOIN batches b ON c.batch_id = b.id
@@ -200,7 +186,6 @@ def get_comment_detail(comment_id, db_path=None):
 
     result = dict(row)
 
-    # Get any L&L flags
     ll_rows = conn.execute(
         "SELECT * FROM ll_flags WHERE comment_id = ?", (comment_id,)
     ).fetchall()
@@ -219,6 +204,9 @@ def get_filter_options(db_path=None):
         ).fetchall()],
         "projects": [dict(r) for r in conn.execute(
             "SELECT project_code, project_name, client FROM projects ORDER BY project_code"
+        ).fetchall()],
+        "comment_types": [r[0] for r in conn.execute(
+            "SELECT DISTINCT comment_type FROM batches ORDER BY comment_type"
         ).fetchall()],
         "revisions": [r[0] for r in conn.execute(
             "SELECT DISTINCT revision FROM batches ORDER BY revision"

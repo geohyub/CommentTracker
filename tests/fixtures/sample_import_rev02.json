@@ -8,6 +8,7 @@
   },
   "batch": {
     "revision": "Rev02",
+    "comment_type": "Processing",
     "reviewer": "Client Technical Team",
     "received_date": "2025-11-20",
     "source_file": "JAKO_Comments_Rev02.xlsx"

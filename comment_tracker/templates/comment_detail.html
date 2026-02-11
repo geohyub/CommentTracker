@@ -1,27 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Comment #{{ comment.id }} - Comment Tracker{% endblock %}
+{% block title %}코멘트 #{{ comment.id }} - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1">
-            <li class="breadcrumb-item"><a href="{{ url_for('comments_page') }}">Comments</a></li>
-            <li class="breadcrumb-item active">Comment #{{ comment.id }}</li>
+            <li class="breadcrumb-item"><a href="{{ url_for('comments_page') }}">코멘트</a></li>
+            <li class="breadcrumb-item active">코멘트 #{{ comment.id }}</li>
         </ol>
     </nav>
-    <h1>Comment #{{ comment.id }}</h1>
+    <h1>코멘트 #{{ comment.id }}</h1>
 </div>
 
 <div class="row g-4">
     <div class="col-xl-8">
         <!-- Comment Content -->
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-chat-text-fill me-2"></i>Comment</div>
+            <div class="card-header"><i class="bi bi-chat-text-fill me-2"></i>코멘트</div>
             <div class="card-body">
                 <div class="comment-text-full mb-3">{{ comment.comment_text }}</div>
 
                 {% if comment.response_text %}
-                <h6 class="fw-bold mt-4 mb-2"><i class="bi bi-reply-fill me-1"></i>Response</h6>
+                <h6 class="fw-bold mt-4 mb-2"><i class="bi bi-reply-fill me-1"></i>응답</h6>
                 <div class="comment-text-full" style="border-left-color: #10b981;">
                     {{ comment.response_text }}
                 </div>
@@ -32,16 +32,16 @@
         <!-- Similar Comments -->
         {% if similar %}
         <div class="card">
-            <div class="card-header"><i class="bi bi-intersect me-2"></i>Similar Comments</div>
+            <div class="card-header"><i class="bi bi-intersect me-2"></i>유사 코멘트</div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th>Project</th>
-                                <th>Comment</th>
-                                <th>Response</th>
+                                <th>프로젝트</th>
+                                <th>코멘트</th>
+                                <th>응답</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -64,39 +64,40 @@
     <div class="col-xl-4">
         <!-- Metadata -->
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>Details</div>
+            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>상세 정보</div>
             <div class="card-body">
                 <table class="table table-sm table-borderless">
-                    <tr><td class="text-muted">Project</td><td class="fw-500"><a href="{{ url_for('project_analytics', project_code=comment.project_code) }}">{{ comment.project_code }}</a></td></tr>
-                    <tr><td class="text-muted">Project Name</td><td>{{ comment.project_name }}</td></tr>
-                    <tr><td class="text-muted">Client</td><td><a href="{{ url_for('client_analytics', client_name=comment.client) }}">{{ comment.client }}</a></td></tr>
-                    <tr><td class="text-muted">Revision</td><td>{{ comment.revision }}</td></tr>
-                    <tr><td class="text-muted">Section</td><td>{{ comment.section or '-' }}</td></tr>
+                    <tr><td class="text-muted">프로젝트</td><td class="fw-500"><a href="{{ url_for('project_analytics', project_code=comment.project_code) }}">{{ comment.project_code }}</a></td></tr>
+                    <tr><td class="text-muted">프로젝트명</td><td>{{ comment.project_name }}</td></tr>
+                    <tr><td class="text-muted">클라이언트</td><td><a href="{{ url_for('client_analytics', client_name=comment.client) }}">{{ comment.client }}</a></td></tr>
+                    <tr><td class="text-muted">리비전</td><td>{{ comment.revision }}</td></tr>
+                    <tr><td class="text-muted">섹션</td><td>{{ comment.section or '-' }}</td></tr>
                     <tr>
-                        <td class="text-muted">Severity</td>
+                        <td class="text-muted">심각도</td>
                         <td><span class="badge-severity badge-{{ comment.severity|lower }}">{{ comment.severity }}</span></td>
                     </tr>
-                    <tr><td class="text-muted">Category</td><td><span class="badge-category">{{ comment.category }}</span></td></tr>
+                    <tr><td class="text-muted">카테고리</td><td><span class="badge-category">{{ comment.category }}</span></td></tr>
                     <tr>
-                        <td class="text-muted">Status</td>
+                        <td class="text-muted">상태</td>
                         <td>
                             <span class="badge-status badge-{{ 'accepted' if comment.status == 'Accepted' else 'modified' if 'modified' in comment.status else 'noted' if comment.status == 'Noted' else 'rejected' }}">
                                 {{ comment.status }}
                             </span>
                         </td>
                     </tr>
-                    <tr><td class="text-muted">Assignee</td><td>{{ comment.assignee or '-' }}</td></tr>
-                    <tr><td class="text-muted">Reviewer</td><td>{{ comment.reviewer or '-' }}</td></tr>
-                    <tr><td class="text-muted">Received</td><td>{{ comment.received_date or '-' }}</td></tr>
+                    <tr><td class="text-muted">담당자</td><td>{{ comment.assignee or '-' }}</td></tr>
+                    <tr><td class="text-muted">리뷰어</td><td>{{ comment.reviewer or '-' }}</td></tr>
+                    <tr><td class="text-muted">수신일</td><td>{{ comment.received_date or '-' }}</td></tr>
                     <tr>
-                        <td class="text-muted">Confidence</td>
+                        <td class="text-muted">신뢰도</td>
                         <td><span class="badge-confidence-{{ comment.confidence|lower }}">{{ comment.confidence }}</span></td>
                     </tr>
+                    <tr><td class="text-muted">코멘트 종류</td><td>{{ LABELS_KO.get(comment.comment_type, comment.comment_type) }}</td></tr>
                     {% if comment.tags %}
-                    <tr><td class="text-muted">Tags</td><td>{% for tag in comment.tags.split(',') %}<span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>{% endfor %}</td></tr>
+                    <tr><td class="text-muted">태그</td><td>{% for tag in comment.tags.split(',') %}<span class="badge bg-light text-dark me-1">{{ tag.strip() }}</span>{% endfor %}</td></tr>
                     {% endif %}
                     {% if comment.excluded %}
-                    <tr><td class="text-muted">Excluded</td><td><span class="badge bg-warning text-dark">Yes</span> {{ comment.exclude_reason or '' }}</td></tr>
+                    <tr><td class="text-muted">제외</td><td><span class="badge bg-warning text-dark">Yes</span> {{ comment.exclude_reason or '' }}</td></tr>
                     {% endif %}
                 </table>
             </div>
@@ -113,7 +114,7 @@
                     {% if flag.ll_summary %}<p class="mt-2 mb-1 small">{{ flag.ll_summary }}</p>{% endif %}
                     {% if flag.ll_action %}<p class="small text-muted mb-1"><strong>Action:</strong> {{ flag.ll_action }}</p>{% endif %}
                     <form method="POST" action="{{ url_for('ll_unflag', flag_id=flag.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1"><i class="bi bi-x-lg me-1"></i>Remove</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger mt-1"><i class="bi bi-x-lg me-1"></i>제거</button>
                     </form>
                 </div>
                 {% endfor %}
@@ -123,7 +124,7 @@
                     <input type="hidden" name="comment_id" value="{{ comment.id }}">
                     <div class="mb-2">
                         <select class="form-select form-select-sm" name="ll_type" required>
-                            <option value="">Flag type...</option>
+                            <option value="">플래그 유형...</option>
                             <option value="Recurring">Recurring</option>
                             <option value="Process">Process</option>
                             <option value="Prevention">Prevention</option>
@@ -131,12 +132,12 @@
                         </select>
                     </div>
                     <div class="mb-2">
-                        <input type="text" class="form-control form-control-sm" name="ll_summary" placeholder="Brief summary">
+                        <input type="text" class="form-control form-control-sm" name="ll_summary" placeholder="요약">
                     </div>
                     <div class="mb-2">
-                        <input type="text" class="form-control form-control-sm" name="ll_action" placeholder="Suggested action">
+                        <input type="text" class="form-control form-control-sm" name="ll_action" placeholder="제안 조치">
                     </div>
-                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-flag-fill me-1"></i>Flag for L&L</button>
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-flag-fill me-1"></i>L&L 플래그</button>
                 </form>
             </div>
         </div>

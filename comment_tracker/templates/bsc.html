@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}BSC Report - Comment Tracker{% endblock %}
+{% block title %}BSC 성과 리포트 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>BSC Performance Report</h1>
-    <p class="subtitle">Individual performance tracking for BSC documentation</p>
+    <h1>BSC 성과 리포트</h1>
+    <p class="subtitle">개인 성과 추적 (BSC 문서화용)</p>
 </div>
 
 <!-- Filter -->
@@ -12,29 +12,29 @@
     <div class="card-body py-3">
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-3">
-                <label class="form-label">Assignee</label>
+                <label class="form-label">담당자</label>
                 <select class="form-select" name="assignee" required>
-                    <option value="">Select assignee...</option>
+                    <option value="">담당자를 선택하세요...</option>
                     {% for a in options.assignees %}
                     <option value="{{ a }}" {{ 'selected' if current_assignee == a }}>{{ a }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
-                <label class="form-label">Year</label>
+                <label class="form-label">연도</label>
                 <input type="number" class="form-control" name="year" value="{{ current_year or '' }}"
                        placeholder="e.g., 2025" min="2020" max="2030">
             </div>
             <div class="col-md-2">
-                <label class="form-label">From</label>
+                <label class="form-label">시작일</label>
                 <input type="month" class="form-control" name="from" value="{{ request.args.get('from', '') }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label">To</label>
+                <label class="form-label">종료일</label>
                 <input type="month" class="form-control" name="to" value="{{ request.args.get('to', '') }}">
             </div>
             <div class="col-md-auto">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-person-badge-fill me-1"></i>Generate</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-person-badge-fill me-1"></i>생성</button>
             </div>
         </form>
     </div>
@@ -47,7 +47,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Documents</div>
+                    <div class="stat-label">담당 문서</div>
                     <div class="stat-value">{{ report.documents }}</div>
                 </div>
                 <div class="stat-icon blue"><i class="bi bi-file-earmark-text-fill"></i></div>
@@ -58,7 +58,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Comments Addressed</div>
+                    <div class="stat-label">처리 코멘트</div>
                     <div class="stat-value">{{ report.total_comments }}</div>
                 </div>
                 <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
@@ -67,7 +67,7 @@
     </div>
     <div class="col-md-6">
         <div class="stat-card">
-            <div class="stat-label">Top Categories Handled</div>
+            <div class="stat-label">주요 처리 카테고리</div>
             <div class="d-flex gap-2 mt-2 flex-wrap">
                 {% for cat in report.category_breakdown[:4] %}
                 <span class="badge-category" style="font-size: 13px; padding: 6px 12px;">
@@ -81,17 +81,17 @@
 
 <!-- Projects Performance -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>Project Performance</div>
+    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>프로젝트별 성과</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Project</th>
-                        <th>Client</th>
-                        <th>Comments</th>
-                        <th>Revisions</th>
-                        <th>Reduction</th>
+                        <th>프로젝트</th>
+                        <th>클라이언트</th>
+                        <th>코멘트</th>
+                        <th>리비전</th>
+                        <th>감소율</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -131,7 +131,7 @@
 <!-- Achievements -->
 {% if report.achievements %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-trophy-fill me-2"></i>Achievements</div>
+    <div class="card-header"><i class="bi bi-trophy-fill me-2"></i>성과</div>
     <div class="card-body">
         <ul class="mb-0">
             {% for ach in report.achievements %}
@@ -148,7 +148,7 @@
 <!-- Category Chart -->
 {% if report.category_breakdown %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+    <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분포</div>
     <div class="card-body">
         <div class="chart-container" style="height: 300px;">
             <canvas id="bscCategoryChart"></canvas>
@@ -162,8 +162,8 @@
     <div class="card-body">
         <div class="empty-state">
             <i class="bi bi-person-badge"></i>
-            <h5>Select an Assignee</h5>
-            <p>Choose an assignee from the dropdown above to generate their BSC performance report.</p>
+            <h5>담당자를 선택하세요</h5>
+            <p>위 드롭다운에서 담당자를 선택하면 BSC 성과 리포트가 생성됩니다.</p>
         </div>
     </div>
 </div>

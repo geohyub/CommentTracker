@@ -131,17 +131,18 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
             )
             project_id = cursor.lastrowid
 
-        # Check for existing batch
+        # Check for existing batch (match by project + comment_type + revision)
+        comment_type = batch_data.get("comment_type", "General")
         existing_batch = conn.execute(
-            "SELECT id FROM batches WHERE project_id = ? AND revision = ?",
-            (project_id, batch_data["revision"])
+            "SELECT id FROM batches WHERE project_id = ? AND comment_type = ? AND revision = ?",
+            (project_id, comment_type, batch_data["revision"])
         ).fetchone()
 
         if existing_batch:
             if not update:
                 raise ImportError(
-                    f"Batch {project_data['project_code']} {batch_data['revision']} already exists. "
-                    "Use update mode to overwrite."
+                    f"배치 {project_data['project_code']} [{comment_type}] {batch_data['revision']} 이(가) 이미 존재합니다. "
+                    "업데이트 모드를 사용하세요."
                 )
             # Delete existing comments and batch
             conn.execute("DELETE FROM comments WHERE batch_id = ?", (existing_batch["id"],))
@@ -149,11 +150,12 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
 
         # Insert batch
         cursor = conn.execute(
-            """INSERT INTO batches (project_id, revision, reviewer, received_date,
-               source_file, total_comments, notes)
-               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO batches (project_id, comment_type, revision, reviewer,
+               received_date, source_file, total_comments, notes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 project_id,
+                comment_type,
                 batch_data["revision"],
                 batch_data.get("reviewer"),
                 batch_data.get("received_date"),
@@ -204,6 +206,7 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
 
         return {
             "project_code": project_data["project_code"],
+            "comment_type": comment_type,
             "revision": batch_data["revision"],
             "total": len(comments_data),
             "major": major_count,

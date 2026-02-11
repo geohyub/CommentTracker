@@ -5,19 +5,19 @@
 <div class="page-header">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1">
-            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">Analytics</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">통계 분석</a></li>
             <li class="breadcrumb-item active">{{ project.project_code }}</li>
         </ol>
     </nav>
     <h1>{{ project.project_code }}</h1>
-    <p class="subtitle">{{ project.project_name }} | Client: {{ project.client }} | {{ project.report_type or '' }} {{ project.survey_type or '' }}</p>
+    <p class="subtitle">{{ project.project_name }} | 클라이언트: {{ project.client }} | {{ project.report_type or '' }} {{ project.survey_type or '' }}</p>
 </div>
 
 <!-- Summary Stats -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Total Comments</div>
+            <div class="stat-label">전체 코멘트</div>
             <div class="stat-value">{{ project.totals.total }}</div>
         </div>
     </div>
@@ -37,7 +37,7 @@
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Excluded</div>
+            <div class="stat-label">제외</div>
             <div class="stat-value">{{ project.totals.excluded or 0 }}</div>
         </div>
     </div>
@@ -47,7 +47,7 @@
     <!-- Revision Trend -->
     <div class="col-xl-7">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-graph-up me-2"></i>Revision Trend</div>
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i>리비전 트렌드</div>
             <div class="card-body">
                 {% if trend and trend.revisions|length > 0 %}
                 <div class="chart-container" style="height: 300px;">
@@ -56,7 +56,7 @@
                 {% if trend.total_reduction is not none %}
                 <div class="mt-3 text-center">
                     <span class="reduction-badge {{ 'reduction-good' if trend.total_reduction >= 70 else 'reduction-ok' if trend.total_reduction >= 40 else 'reduction-bad' }}" style="font-size: 14px; padding: 6px 16px;">
-                        Overall: &#9660; {{ trend.total_reduction }}% reduction
+                        전체 감소율: &#9660; {{ trend.total_reduction }}%
                     </span>
                 </div>
                 {% endif %}
@@ -68,7 +68,7 @@
     <!-- Category Distribution -->
     <div class="col-xl-5">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Breakdown</div>
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분석</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="categoryChart"></canvas>
@@ -80,23 +80,70 @@
 
 <!-- Revision Details Table -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-layers-fill me-2"></i>Revision Summary</div>
+    <div class="card-header"><i class="bi bi-layers-fill me-2"></i>리비전 요약</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Revision</th>
-                        <th>Date</th>
-                        <th>Reviewer</th>
-                        <th>Total</th>
+                        <th>리비전</th>
+                        <th>날짜</th>
+                        <th>리뷰어</th>
+                        <th>코멘트 종류</th>
+                        <th>전체</th>
                         <th>Major</th>
                         <th>Minor</th>
-                        <th>Reduction</th>
+                        <th>감소율</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for r in project.revisions %}
+                    <tr>
+                        <td class="fw-500">{{ r.revision }}</td>
+                        <td>{{ r.received_date or '-' }}</td>
+                        <td>{{ r.reviewer or '-' }}</td>
+                        <td>{{ r.comment_type or '-' }}</td>
+                        <td>{{ r.total }}</td>
+                        <td><span class="badge-severity badge-major">{{ r.major }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ r.minor }}</span></td>
+                        <td>
+                            {% if r.get('reduction') is not none %}
+                            <span class="reduction-badge {{ 'reduction-good' if r.reduction >= 70 else 'reduction-ok' if r.reduction >= 40 else 'reduction-bad' }}">
+                                &#9660; {{ r.reduction }}%
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Type Groups -->
+{% if comment_type_groups %}
+{% for group in comment_type_groups %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-collection-fill me-2"></i>{{ group.comment_type }}</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>리비전</th>
+                        <th>날짜</th>
+                        <th>리뷰어</th>
+                        <th>전체</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th>감소율</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in group.revisions %}
                     <tr>
                         <td class="fw-500">{{ r.revision }}</td>
                         <td>{{ r.received_date or '-' }}</td>
@@ -120,10 +167,12 @@
         </div>
     </div>
 </div>
+{% endfor %}
+{% endif %}
 
 <!-- Status Distribution -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status Distribution</div>
+    <div class="card-header"><i class="bi bi-check2-circle me-2"></i>상태 분포</div>
     <div class="card-body">
         {% for s in project.statuses %}
         <div class="d-flex align-items-center mb-2">
@@ -140,7 +189,7 @@
 
 <div class="text-center">
     <a href="{{ url_for('comments_page', project=project.project_code) }}" class="btn btn-outline-primary">
-        <i class="bi bi-chat-dots-fill me-2"></i>View All Comments for {{ project.project_code }}
+        <i class="bi bi-chat-dots-fill me-2"></i>{{ project.project_code }} 전체 코멘트 보기
     </a>
 </div>
 {% endblock %}

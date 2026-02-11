@@ -1,48 +1,48 @@
 {% extends "base.html" %}
-{% block title %}Settings - Comment Tracker{% endblock %}
+{% block title %}설정 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>Settings & Database Info</h1>
+    <h1>설정 & DB 정보</h1>
     <p class="subtitle">System information and configuration</p>
 </div>
 
 <div class="row g-4">
     <div class="col-xl-6">
         <div class="card">
-            <div class="card-header"><i class="bi bi-database-fill me-2"></i>Database Information</div>
+            <div class="card-header"><i class="bi bi-database-fill me-2"></i>데이터베이스 정보</div>
             <div class="card-body">
                 <table class="table table-sm table-borderless">
                     <tr>
-                        <td class="text-muted" style="width: 40%;">Database Path</td>
+                        <td class="text-muted" style="width: 40%;">DB 경로</td>
                         <td><code>{{ info.db_path }}</code></td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Database Size</td>
+                        <td class="text-muted">DB 크기</td>
                         <td>{{ (info.db_size / 1024)|round(1) }} KB</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Projects</td>
+                        <td class="text-muted">프로젝트</td>
                         <td>{{ info.project_count }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Batches</td>
+                        <td class="text-muted">배치</td>
                         <td>{{ info.batch_count }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Comments</td>
+                        <td class="text-muted">코멘트</td>
                         <td>{{ info.comment_count }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">L&L Flags</td>
+                        <td class="text-muted">L&L 플래그</td>
                         <td>{{ info.ll_flag_count }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Date Range</td>
+                        <td class="text-muted">기간</td>
                         <td>{{ info.date_from or 'N/A' }} to {{ info.date_to or 'N/A' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Clients</td>
+                        <td class="text-muted">클라이언트</td>
                         <td>{{ info.clients | join(', ') if info.clients else 'None' }}</td>
                     </tr>
                 </table>
@@ -52,21 +52,21 @@
 
     <div class="col-xl-6">
         <div class="card mb-4">
-            <div class="card-header"><i class="bi bi-download me-2"></i>Export Options</div>
+            <div class="card-header"><i class="bi bi-download me-2"></i>내보내기 옵션</div>
             <div class="card-body">
                 <div class="d-grid gap-2">
                     <a href="{{ url_for('export_excel') }}" class="btn btn-outline-primary text-start">
-                        <i class="bi bi-file-earmark-excel-fill me-2"></i>Download Full Excel Report
+                        <i class="bi bi-file-earmark-excel-fill me-2"></i>전체 Excel 리포트 다운로드
                         <small class="d-block text-muted">5-tab report: Overview, Projects, Clients, Category Trend, Recurring Themes</small>
                     </a>
                     <a href="{{ url_for('export_comments', format='json') }}" class="btn btn-outline-primary text-start">
-                        <i class="bi bi-filetype-json me-2"></i>Export All Comments (JSON)
+                        <i class="bi bi-filetype-json me-2"></i>전체 코멘트 내보내기 (JSON)
                     </a>
                     <a href="{{ url_for('export_comments', format='csv') }}" class="btn btn-outline-primary text-start">
-                        <i class="bi bi-filetype-csv me-2"></i>Export All Comments (CSV)
+                        <i class="bi bi-filetype-csv me-2"></i>전체 코멘트 내보내기 (CSV)
                     </a>
                     <a href="{{ url_for('ll_export_download') }}" class="btn btn-outline-primary text-start">
-                        <i class="bi bi-lightbulb-fill me-2"></i>Export L&L Data (JSON)
+                        <i class="bi bi-lightbulb-fill me-2"></i>L&L 데이터 내보내기 (JSON)
                         <small class="d-block text-muted">Structured L&L summary compatible with lessons-learned-writer skill</small>
                     </a>
                 </div>
@@ -74,7 +74,7 @@
         </div>
 
         <div class="card">
-            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>About</div>
+            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>프로그램 정보</div>
             <div class="card-body">
                 <p class="mb-1"><strong>Comment Tracker & Analytics</strong> v1.0.0</p>
                 <p class="text-muted small mb-3">

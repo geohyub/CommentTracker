@@ -3,8 +3,16 @@
 from ..db import get_connection
 
 
-def get_category_distribution(client=None, project_code=None, db_path=None):
-    """Get category distribution breakdown."""
+def get_category_distribution(client=None, project_code=None, comment_type=None,
+                              db_path=None):
+    """Get category distribution breakdown.
+
+    Args:
+        client: Optional client name filter.
+        project_code: Optional project code filter.
+        comment_type: Optional comment_type filter (e.g., "Operation", "MobCal").
+        db_path: Optional database path.
+    """
     conn = get_connection(db_path)
 
     sql = """
@@ -21,6 +29,9 @@ def get_category_distribution(client=None, project_code=None, db_path=None):
     if project_code:
         sql += " AND p.project_code = ?"
         params.append(project_code)
+    if comment_type:
+        sql += " AND b.comment_type = ?"
+        params.append(comment_type)
 
     sql += " GROUP BY c.category, c.severity ORDER BY count DESC"
     rows = conn.execute(sql, params).fetchall()
@@ -39,6 +50,9 @@ def get_category_distribution(client=None, project_code=None, db_path=None):
     if project_code:
         total_sql += " AND p.project_code = ?"
         total_params.append(project_code)
+    if comment_type:
+        total_sql += " AND b.comment_type = ?"
+        total_params.append(comment_type)
 
     total = conn.execute(total_sql, total_params).fetchone()[0]
 
@@ -78,6 +92,9 @@ def get_category_distribution(client=None, project_code=None, db_path=None):
     if project_code:
         status_sql += " AND p.project_code = ?"
         status_params.append(project_code)
+    if comment_type:
+        status_sql += " AND b.comment_type = ?"
+        status_params.append(comment_type)
     status_sql += " GROUP BY c.status ORDER BY count DESC"
 
     status_rows = conn.execute(status_sql, status_params).fetchall()

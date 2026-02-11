@@ -5,14 +5,14 @@
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
         <h1>Lessons & Learned</h1>
-        <p class="subtitle">{{ flags|length }} items flagged for L&L review</p>
+        <p class="subtitle">{{ flags|length }}건 L&L 플래그</p>
     </div>
     <div>
         <a href="{{ url_for('ll_scan') }}" class="btn btn-outline-primary me-2">
-            <i class="bi bi-radar me-1"></i>Run L&L Scan
+            <i class="bi bi-radar me-1"></i>L&L 스캔 실행
         </a>
         <a href="{{ url_for('ll_export_download') }}" class="btn btn-primary">
-            <i class="bi bi-download me-1"></i>Export L&L JSON
+            <i class="bi bi-download me-1"></i>L&L JSON 내보내기
         </a>
     </div>
 </div>
@@ -43,19 +43,19 @@
 
         {% if flag.ll_summary %}
         <div class="mt-2 p-2 rounded" style="background: #f8fafc;">
-            <strong class="small">Summary:</strong> {{ flag.ll_summary }}
+            <strong class="small">요약:</strong> {{ flag.ll_summary }}
         </div>
         {% endif %}
 
         {% if flag.ll_action %}
         <div class="mt-1 p-2 rounded" style="background: #f0fdf4;">
-            <strong class="small">Action:</strong> {{ flag.ll_action }}
+            <strong class="small">조치:</strong> {{ flag.ll_action }}
         </div>
         {% endif %}
 
         <div class="mt-2">
             <form method="POST" action="{{ url_for('ll_unflag', flag_id=flag.id) }}" class="d-inline">
-                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Remove Flag</button>
+                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>플래그 제거</button>
             </form>
         </div>
     </div>
@@ -67,10 +67,10 @@
     <div class="card-body">
         <div class="empty-state">
             <i class="bi bi-lightbulb"></i>
-            <h5>No L&L Items Yet</h5>
-            <p>Flag comments from the comment detail page, or run an automatic scan to find candidates.</p>
+            <h5>L&L 항목이 없습니다</h5>
+            <p>코멘트 상세 페이지에서 플래그하거나 자동 스캔을 실행하세요.</p>
             <a href="{{ url_for('ll_scan') }}" class="btn btn-primary">
-                <i class="bi bi-radar me-2"></i>Run L&L Scan
+                <i class="bi bi-radar me-2"></i>L&L 스캔 실행
             </a>
         </div>
     </div>

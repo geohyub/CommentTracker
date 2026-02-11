@@ -1,55 +1,77 @@
 {% extends "base.html" %}
-{% block title %}Import Data - Comment Tracker{% endblock %}
+{% block title %}데이터 임포트 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>Import Data</h1>
-    <p class="subtitle">Upload structured comment data (JSON or CSV)</p>
+    <h1>데이터 임포트</h1>
+    <p class="subtitle">구조화된 코멘트 데이터 업로드 (JSON 또는 CSV)</p>
 </div>
 
 <div class="row">
     <div class="col-xl-8">
         <form method="POST" enctype="multipart/form-data" action="{{ url_for('import_page') }}">
             <div class="card mb-4">
-                <div class="card-header"><i class="bi bi-cloud-upload-fill me-2"></i>Upload File</div>
+                <div class="card-header"><i class="bi bi-cloud-upload-fill me-2"></i>파일 업로드</div>
                 <div class="card-body">
                     <div class="upload-area mb-3">
                         <i class="bi bi-file-earmark-arrow-up d-block"></i>
-                        <h5>Drag & drop your file here</h5>
-                        <p class="text-muted mb-0">or click to browse. Supports JSON and CSV files.</p>
+                        <h5>여기에 파일을 드래그 앤 드롭하세요</h5>
+                        <p class="text-muted mb-0">또는 클릭하여 파일을 선택하세요. JSON, CSV 파일 지원.</p>
                     </div>
                     <input type="file" name="file" id="fileInput" accept=".json,.csv" class="d-none" required>
 
                     <div class="form-check mt-3">
                         <input type="checkbox" class="form-check-input" id="updateMode" name="update">
                         <label class="form-check-label" for="updateMode">
-                            <strong>Update mode</strong> - Overwrite existing batch if it already exists
+                            <strong>업데이트 모드</strong> - 기존 배치가 있으면 덮어쓰기
                         </label>
                     </div>
                 </div>
             </div>
 
-            <!-- CSV metadata fields (shown only for CSV) -->
+            <!-- 코멘트 종류 (항상 표시) -->
+            <div class="card mb-4">
+                <div class="card-header"><i class="bi bi-tag-fill me-2"></i>코멘트 종류</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">코멘트 종류 *</label>
+                            <select class="form-select" name="comment_type">
+                                <option value="Operation">Operation (오퍼레이션)</option>
+                                <option value="MobCal">MobCal (몹캘)</option>
+                                <option value="PEP">PEP</option>
+                                <option value="Processing">Processing (처리 보고서)</option>
+                                <option value="Interpretation">Interpretation (해석 보고서)</option>
+                                <option value="Field">Field (현장 보고서)</option>
+                                <option value="General" selected>General (일반)</option>
+                                <option value="Other">Other (기타)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CSV 메타데이터 필드 (CSV 파일에만 표시) -->
             <div class="card mb-4" id="csvFields" style="display: none;">
-                <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>CSV Metadata (required for CSV files)</div>
+                <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>CSV 메타데이터 (CSV 파일에 필요)</div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label class="form-label">Project Code *</label>
-                            <input type="text" class="form-control" name="project_code" placeholder="e.g., JAKO2025">
+                            <label class="form-label">프로젝트 코드 *</label>
+                            <input type="text" class="form-control" name="project_code" placeholder="예: JAKO2025">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Project Name *</label>
-                            <input type="text" class="form-control" name="project_name" placeholder="e.g., JAKO Route Survey 2025">
+                            <label class="form-label">프로젝트 이름 *</label>
+                            <input type="text" class="form-control" name="project_name" placeholder="예: JAKO Route Survey 2025">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Client *</label>
-                            <input type="text" class="form-control" name="client" placeholder="e.g., JAKO">
+                            <label class="form-label">클라이언트 *</label>
+                            <input type="text" class="form-control" name="client" placeholder="예: JAKO">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Report Type</label>
+                            <label class="form-label">보고서 유형</label>
                             <select class="form-select" name="report_type">
-                                <option value="">Select...</option>
+                                <option value="">선택...</option>
                                 <option>Processing</option>
                                 <option>Interpretation</option>
                                 <option>Field</option>
@@ -57,9 +79,9 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Survey Type</label>
+                            <label class="form-label">조사 유형</label>
                             <select class="form-select" name="survey_type">
-                                <option value="">Select...</option>
+                                <option value="">선택...</option>
                                 <option>OWF</option>
                                 <option>Route</option>
                                 <option>Geotech</option>
@@ -67,50 +89,63 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Revision *</label>
-                            <input type="text" class="form-control" name="revision" placeholder="e.g., Rev01">
+                            <label class="form-label">리비전 *</label>
+                            <input type="text" class="form-control" name="revision" placeholder="예: Rev01">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Reviewer</label>
-                            <input type="text" class="form-control" name="reviewer" placeholder="e.g., Client Technical Team">
+                            <label class="form-label">리뷰어</label>
+                            <input type="text" class="form-control" name="reviewer" placeholder="예: Client Technical Team">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Received Date</label>
+                            <label class="form-label">수신일</label>
                             <input type="date" class="form-control" name="received_date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">코멘트 종류</label>
+                            <select class="form-select" name="csv_comment_type">
+                                <option value="Operation">Operation (오퍼레이션)</option>
+                                <option value="MobCal">MobCal (몹캘)</option>
+                                <option value="PEP">PEP</option>
+                                <option value="Processing">Processing (처리 보고서)</option>
+                                <option value="Interpretation">Interpretation (해석 보고서)</option>
+                                <option value="Field">Field (현장 보고서)</option>
+                                <option value="General" selected>General (일반)</option>
+                                <option value="Other">Other (기타)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
 
             <button type="submit" class="btn btn-primary btn-lg">
-                <i class="bi bi-upload me-2"></i>Import
+                <i class="bi bi-upload me-2"></i>임포트
             </button>
         </form>
     </div>
 
     <div class="col-xl-4">
         <div class="card">
-            <div class="card-header"><i class="bi bi-question-circle-fill me-2"></i>Import Guide</div>
+            <div class="card-header"><i class="bi bi-question-circle-fill me-2"></i>임포트 가이드</div>
             <div class="card-body">
-                <h6 class="fw-bold">JSON Format (Recommended)</h6>
-                <p class="text-muted small">JSON files include project, batch, and comment data in one file. See the ingestion schema for the required structure.</p>
+                <h6 class="fw-bold">JSON 형식 (권장)</h6>
+                <p class="text-muted small">JSON 파일에는 프로젝트, 배치, 코멘트 데이터가 하나의 파일에 포함됩니다. 필수 구조는 인제스천 스키마를 참조하세요.</p>
 
-                <h6 class="fw-bold mt-3">CSV Format</h6>
-                <p class="text-muted small">CSV files contain only comment rows. Project and batch metadata must be provided via the form fields above.</p>
+                <h6 class="fw-bold mt-3">CSV 형식</h6>
+                <p class="text-muted small">CSV 파일에는 코멘트 행만 포함됩니다. 프로젝트 및 배치 메타데이터는 위의 폼 필드를 통해 제공해야 합니다.</p>
 
                 <hr>
-                <h6 class="fw-bold">Required Comment Fields</h6>
+                <h6 class="fw-bold">필수 코멘트 필드</h6>
                 <ul class="small text-muted">
-                    <li><code>comment_number</code> - Sequential number</li>
-                    <li><code>comment_text</code> - The comment content</li>
-                    <li><code>severity</code> - Major or Minor</li>
+                    <li><code>comment_number</code> - 순번</li>
+                    <li><code>comment_text</code> - 코멘트 내용</li>
+                    <li><code>severity</code> - Major 또는 Minor</li>
                     <li><code>category</code> - Technical, Typo, Readability, FigTable, Format, Reference</li>
                     <li><code>status</code> - Accepted, Accepted (modified), Noted, Rejected</li>
                 </ul>
 
                 <hr>
-                <h6 class="fw-bold">Update Mode</h6>
-                <p class="text-muted small mb-0">If a batch (same project + revision) already exists, import will fail unless update mode is checked. Update mode deletes the existing batch data and replaces it.</p>
+                <h6 class="fw-bold">업데이트 모드</h6>
+                <p class="text-muted small mb-0">동일한 배치(같은 프로젝트 + 리비전)가 이미 존재하는 경우, 업데이트 모드를 체크하지 않으면 임포트가 실패합니다. 업데이트 모드는 기존 배치 데이터를 삭제하고 새 데이터로 교체합니다.</p>
             </div>
         </div>
     </div>

@@ -40,7 +40,7 @@ def get_client_stats(client_name, db_path=None):
 
         # Get per-revision data
         revisions = conn.execute(
-            """SELECT b.revision, COUNT(c.id) as total
+            """SELECT b.revision, b.comment_type, COUNT(c.id) as total
                FROM batches b
                LEFT JOIN comments c ON c.batch_id = b.id
                WHERE b.project_id = ?

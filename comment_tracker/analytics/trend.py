@@ -3,8 +3,14 @@
 from ..db import get_connection
 
 
-def get_project_trend(project_code, db_path=None):
-    """Get revision-over-revision trend for a project."""
+def get_project_trend(project_code, comment_type=None, db_path=None):
+    """Get revision-over-revision trend for a project.
+
+    Args:
+        project_code: The project code to look up.
+        comment_type: Optional filter by comment_type (e.g., "Operation", "MobCal").
+        db_path: Optional database path.
+    """
     conn = get_connection(db_path)
 
     project = conn.execute(
@@ -16,19 +22,24 @@ def get_project_trend(project_code, db_path=None):
         return None
 
     pid = project["id"]
-    revisions = conn.execute(
-        """SELECT b.revision, b.received_date,
+
+    sql = """SELECT b.revision, b.received_date, b.comment_type,
                   COUNT(c.id) as total,
                   SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major,
                   SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor,
                   SUM(c.excluded) as excluded
            FROM batches b
            LEFT JOIN comments c ON c.batch_id = b.id
-           WHERE b.project_id = ?
-           GROUP BY b.id
-           ORDER BY b.revision""",
-        (pid,)
-    ).fetchall()
+           WHERE b.project_id = ?"""
+    params = [pid]
+
+    if comment_type:
+        sql += " AND b.comment_type = ?"
+        params.append(comment_type)
+
+    sql += " GROUP BY b.id ORDER BY b.revision"
+
+    revisions = conn.execute(sql, params).fetchall()
 
     trend = {
         "project_code": project_code,

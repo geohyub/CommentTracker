@@ -5,31 +5,31 @@
 <div class="page-header">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb mb-1">
-            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">Analytics</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('analytics_page') }}">통계 분석</a></li>
             <li class="breadcrumb-item active">{{ client.client }}</li>
         </ol>
     </nav>
     <h1>{{ client.client }}</h1>
-    <p class="subtitle">{{ client.project_count }} projects | {{ client.total_comments }} total comments</p>
+    <p class="subtitle">{{ client.project_count }}개 프로젝트 | 전체 코멘트 {{ client.total_comments }}건</p>
 </div>
 
 <!-- Summary Stats -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Projects</div>
+            <div class="stat-label">프로젝트</div>
             <div class="stat-value">{{ client.project_count }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Avg per Project</div>
+            <div class="stat-label">프로젝트당 평균</div>
             <div class="stat-value">{{ client.avg_comments_per_project }}</div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Avg Reduction</div>
+            <div class="stat-label">평균 감소율</div>
             <div class="stat-value">
                 {% if client.avg_reduction is not none %}
                 {{ client.avg_reduction }}%
@@ -41,7 +41,7 @@
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-label">Most Common</div>
+            <div class="stat-label">최다 카테고리</div>
             <div class="stat-value" style="font-size: 20px;">
                 {% if client.most_common_category %}
                 {{ client.most_common_category.category }}
@@ -56,7 +56,7 @@
 <div class="row g-3 mb-4">
     <div class="col-xl-6">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분포</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="categoryChart"></canvas>
@@ -66,14 +66,14 @@
     </div>
     <div class="col-xl-6">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-graph-up me-2"></i>Category Trend</div>
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i>카테고리 트렌드</div>
             <div class="card-body">
                 {% if category_trend %}
                 <div class="chart-container" style="height: 300px;">
                     <canvas id="trendChart"></canvas>
                 </div>
                 {% else %}
-                <div class="empty-state"><p>Not enough data for trend</p></div>
+                <div class="empty-state"><p>트렌드 데이터 부족</p></div>
                 {% endif %}
             </div>
         </div>
@@ -82,19 +82,19 @@
 
 <!-- Projects Table -->
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>Projects</div>
+    <div class="card-header"><i class="bi bi-folder-fill me-2"></i>프로젝트</div>
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>Project</th>
-                        <th>Type</th>
-                        <th>Revisions</th>
-                        <th>Total</th>
+                        <th>프로젝트</th>
+                        <th>유형</th>
+                        <th>리비전</th>
+                        <th>전체</th>
                         <th>Major</th>
                         <th>Minor</th>
-                        <th>Reduction</th>
+                        <th>감소율</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -120,7 +120,7 @@
                             <span class="text-muted">N/A</span>
                             {% endif %}
                         </td>
-                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">Detail</a></td>
+                        <td><a href="{{ url_for('project_analytics', project_code=p.project_code) }}" class="btn btn-sm btn-outline-primary">상세</a></td>
                     </tr>
                     {% endfor %}
                 </tbody>

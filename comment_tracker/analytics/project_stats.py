@@ -19,7 +19,7 @@ def get_project_stats(project_code, db_path=None):
 
     # Revision summary
     revisions = conn.execute(
-        """SELECT b.revision, b.received_date, b.reviewer,
+        """SELECT b.revision, b.received_date, b.reviewer, b.comment_type,
                   COUNT(c.id) as total,
                   SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major,
                   SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor,
@@ -42,6 +42,33 @@ def get_project_stats(project_code, db_path=None):
                 project["revisions"][i]["reduction"] = round((1 - curr / prev) * 100)
             else:
                 project["revisions"][i]["reduction"] = 0
+
+    # Group batches by comment_type then revision
+    type_groups = {}
+    for rev in project["revisions"]:
+        ct = rev.get("comment_type") or "Unknown"
+        if ct not in type_groups:
+            type_groups[ct] = {"comment_type": ct, "revisions": []}
+        type_groups[ct]["revisions"].append(rev)
+
+    # Calculate reduction trends per comment_type group
+    for group in type_groups.values():
+        revs = group["revisions"]
+        if len(revs) >= 2:
+            for i in range(1, len(revs)):
+                prev = revs[i - 1]["total"]
+                curr = revs[i]["total"]
+                if prev > 0:
+                    revs[i]["reduction"] = round((1 - curr / prev) * 100)
+                else:
+                    revs[i]["reduction"] = 0
+            first = revs[0]["total"]
+            last = revs[-1]["total"]
+            group["overall_reduction"] = round((1 - last / first) * 100) if first > 0 else 0
+        else:
+            group["overall_reduction"] = None
+
+    project["comment_type_groups"] = list(type_groups.values())
 
     # Overall totals
     totals = conn.execute(
@@ -105,7 +132,7 @@ def get_all_projects_summary(db_path=None):
         pd = dict(p)
         # Get first and last revision comment counts for reduction calc
         revs = conn.execute(
-            """SELECT COUNT(c.id) as cnt
+            """SELECT b.comment_type, COUNT(c.id) as cnt
                FROM batches b
                LEFT JOIN comments c ON c.batch_id = b.id
                WHERE b.project_id = ?
@@ -114,11 +141,23 @@ def get_all_projects_summary(db_path=None):
             (pd["id"],)
         ).fetchall()
         if len(revs) >= 2:
-            first = revs[0][0]
-            last = revs[-1][0]
+            first = revs[0]["cnt"]
+            last = revs[-1]["cnt"]
             pd["reduction"] = round((1 - last / first) * 100) if first > 0 else 0
         else:
             pd["reduction"] = None
+
+        # Distinct comment types for this project
+        types = conn.execute(
+            """SELECT DISTINCT b.comment_type
+               FROM batches b
+               WHERE b.project_id = ? AND b.comment_type IS NOT NULL
+               ORDER BY b.comment_type""",
+            (pd["id"],)
+        ).fetchall()
+        pd["comment_types"] = [t["comment_type"] for t in types]
+        pd["type_count"] = len(pd["comment_types"])
+
         results.append(pd)
 
     conn.close()

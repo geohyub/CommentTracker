@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - Comment Tracker{% endblock %}
+{% block title %}대시보드 - Comment Tracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>Dashboard</h1>
-    <p class="subtitle">Overview of comment tracking data and trends</p>
+    <h1>대시보드</h1>
+    <p class="subtitle">코멘트 추적 데이터 개요</p>
 </div>
 
 <!-- Stat Cards Row -->
@@ -13,7 +13,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Total Projects</div>
+                    <div class="stat-label">전체 프로젝트</div>
                     <div class="stat-value">{{ info.project_count }}</div>
                 </div>
                 <div class="stat-icon blue"><i class="bi bi-folder-fill"></i></div>
@@ -24,7 +24,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Total Comments</div>
+                    <div class="stat-label">전체 코멘트</div>
                     <div class="stat-value">{{ info.comment_count }}</div>
                 </div>
                 <div class="stat-icon green"><i class="bi bi-chat-dots-fill"></i></div>
@@ -35,7 +35,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">Review Batches</div>
+                    <div class="stat-label">리뷰 배치</div>
                     <div class="stat-value">{{ info.batch_count }}</div>
                 </div>
                 <div class="stat-icon purple"><i class="bi bi-layers-fill"></i></div>
@@ -46,7 +46,7 @@
         <div class="stat-card">
             <div class="d-flex justify-content-between align-items-start">
                 <div>
-                    <div class="stat-label">L&L Flags</div>
+                    <div class="stat-label">L&L 플래그</div>
                     <div class="stat-value">{{ info.ll_flag_count }}</div>
                 </div>
                 <div class="stat-icon orange"><i class="bi bi-lightbulb-fill"></i></div>
@@ -60,7 +60,7 @@
     <!-- Category Distribution Chart -->
     <div class="col-xl-4 col-lg-5">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>Category Distribution</div>
+            <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분포</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 280px;">
                     <canvas id="categoryChart"></canvas>
@@ -72,7 +72,7 @@
     <!-- Severity Distribution -->
     <div class="col-xl-4 col-lg-3">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>Severity Split</div>
+            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>심각도 분포</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 280px;">
                     <canvas id="severityChart"></canvas>
@@ -84,7 +84,7 @@
     <!-- Status Distribution -->
     <div class="col-xl-4 col-lg-4">
         <div class="card h-100">
-            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>Status Distribution</div>
+            <div class="card-header"><i class="bi bi-check2-circle me-2"></i>상태 분포</div>
             <div class="card-body">
                 <div class="chart-container" style="height: 280px;">
                     <canvas id="statusChart"></canvas>
@@ -99,19 +99,19 @@
     <div class="col-xl-7">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-folder-fill me-2"></i>Projects</span>
-                <a href="{{ url_for('projects_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+                <span><i class="bi bi-folder-fill me-2"></i>프로젝트</span>
+                <a href="{{ url_for('projects_page') }}" class="btn btn-sm btn-outline-primary">전체 보기</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Project</th>
-                                <th>Client</th>
-                                <th>Revisions</th>
-                                <th>Comments</th>
-                                <th>Reduction</th>
+                                <th>프로젝트</th>
+                                <th>클라이언트</th>
+                                <th>리비전</th>
+                                <th>코멘트</th>
+                                <th>감소율</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -149,15 +149,15 @@
     <!-- Clients Summary -->
     <div class="col-xl-5">
         <div class="card">
-            <div class="card-header"><i class="bi bi-building me-2"></i>Clients</div>
+            <div class="card-header"><i class="bi bi-building me-2"></i>클라이언트</div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Client</th>
-                                <th>Projects</th>
-                                <th>Comments</th>
+                                <th>클라이언트</th>
+                                <th>프로젝트</th>
+                                <th>코멘트</th>
                                 <th>Major</th>
                             </tr>
                         </thead>
@@ -185,8 +185,8 @@
 <!-- Recent Comments -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span><i class="bi bi-clock-fill me-2"></i>Recent Comments</span>
-        <a href="{{ url_for('comments_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        <span><i class="bi bi-clock-fill me-2"></i>최근 코멘트</span>
+        <a href="{{ url_for('comments_page') }}" class="btn btn-sm btn-outline-primary">전체 보기</a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -194,12 +194,13 @@
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Project</th>
-                        <th>Rev</th>
-                        <th>Comment</th>
-                        <th>Severity</th>
-                        <th>Category</th>
-                        <th>Status</th>
+                        <th>프로젝트</th>
+                        <th>리비전</th>
+                        <th>코멘트</th>
+                        <th>코멘트 종류</th>
+                        <th>심각도</th>
+                        <th>카테고리</th>
+                        <th>상태</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -209,6 +210,7 @@
                         <td>{{ c.project_code }}</td>
                         <td>{{ c.revision }}</td>
                         <td class="comment-text">{{ c.comment_text }}</td>
+                        <td>{{ c.comment_type }}</td>
                         <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
                         <td><span class="badge-category">{{ c.category }}</span></td>
                         <td>
@@ -230,10 +232,10 @@
     <div class="card-body">
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
-            <h5>No Data Yet</h5>
-            <p>Start by importing your first comment file.</p>
+            <h5>아직 데이터가 없습니다</h5>
+            <p>첫 번째 코멘트 파일을 임포트하세요.</p>
             <a href="{{ url_for('import_page') }}" class="btn btn-primary">
-                <i class="bi bi-cloud-upload-fill me-2"></i>Import Data
+                <i class="bi bi-cloud-upload-fill me-2"></i>데이터 임포트
             </a>
         </div>
     </div>

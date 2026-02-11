@@ -31,7 +31,7 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
     # Documents worked on
     projects = conn.execute(
         f"""SELECT DISTINCT p.project_code, p.project_name, p.client,
-                   COUNT(c.id) as comments_addressed
+                   b.comment_type, COUNT(c.id) as comments_addressed
             FROM comments c
             JOIN batches b ON c.batch_id = b.id
             JOIN projects p ON b.project_id = p.id
@@ -71,7 +71,7 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
     # Improvement trends per project
     for proj in result["projects"]:
         revs = conn.execute(
-            """SELECT b.revision, COUNT(c.id) as total
+            """SELECT b.revision, b.comment_type, COUNT(c.id) as total
                FROM batches b
                LEFT JOIN comments c ON c.batch_id = b.id AND c.assignee = ?
                WHERE b.project_id = (SELECT id FROM projects WHERE project_code = ?)
