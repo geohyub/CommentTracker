@@ -1,0 +1,34 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00017_Nonconformance Management Procedure_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "Document is describing internal NCR treatment process. However, for major NCR, Client shall be informed accordingly in the resolution, approval and closure process (similar comment on the NCR template which was provided). And this document does not deal with interfaces with the Customer.",
+      "summary_ko": "Document is describing internal NCR treatment process 기술적 확인/수정 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01,resolution"
+    }
+  ]
+}

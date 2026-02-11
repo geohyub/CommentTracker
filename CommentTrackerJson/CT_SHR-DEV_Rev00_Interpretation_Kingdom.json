@@ -1,0 +1,109 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "Interpretation",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHS_KOR-SHR-000019_ID_GEO1_Kingdom_Project_CS.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "Why was the interpretation of H2/T2 done this way in the south east?\nIt seaems the general trend of H2 would have aligned more with the lower set of reflectors (yellow arrow).\nSame for the erosion T2, it seems it could have been put lower (bue arrow), equivalent to the general trend seen along the line.",
+      "summary_ko": "Why was the interpretation of H2/T2 done this way in the south east? 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:01"
+    },
+    {
+      "comment_number": 2,
+      "section": "",
+      "comment_text": "Why isn't the SBP uploaded in the kingdom project?",
+      "summary_ko": "Why isn't the SBP uploaded in the kingdom project? 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:02,seismic"
+    },
+    {
+      "comment_number": 3,
+      "section": "",
+      "comment_text": "Please load the navigation of the lines then import the data insde these geometries. As is the lines geometry is an approximation, constructed typically by a decimation of the shot points",
+      "summary_ko": "load the navigation of the lines then import the data insde these geometries 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:03,positioning"
+    },
+    {
+      "comment_number": 4,
+      "section": "",
+      "comment_text": "There are various discrepencies in the horizons interpretations. Granted the stratigraphy is complex and with the sparse line plan it is difficult to keep track for some reflectors, but please adjust for coherency when possible. Exemple below shows discrepencies between displayed line and crosslines (A) and some misinterpreted horizons along given seismic line, cutting though different packages (B).",
+      "summary_ko": "There are various discrepencies in the horizons interpretations 그림/표 수정 필요.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:04,seismic"
+    },
+    {
+      "comment_number": 5,
+      "section": "",
+      "comment_text": "Please adjust the picking to the 2D Hunt mode when possible. E.g. H1&H2 can be picked by following strong continuous reflectors most the time:",
+      "summary_ko": "adjust the picking to the 2D Hunt mode when possible 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:05"
+    },
+    {
+      "comment_number": 6,
+      "section": "",
+      "comment_text": "Shallow horizon does not display in base map, is it because the SBP could not be found in the project?\nThe associated grid is available.",
+      "summary_ko": "Shallow horizon does not display in base map 그림/표 수정 필요.",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:06,seismic"
+    }
+  ]
+}

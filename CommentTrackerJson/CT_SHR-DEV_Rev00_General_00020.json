@@ -1,0 +1,64 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00020_Quality Audit Plan_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "This document is a Quality audit procedure. Can you please attach the quality audit schedule to this document showing which audits you have planned and their associated timeline.",
+      "summary_ko": "This document is a Quality audit procedure 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:01"
+    },
+    {
+      "comment_number": 2,
+      "section": "",
+      "comment_text": "It is strange to see that audits are planned at the end of the project. This is more to be considered in this case as a Return of Experience. Is there a reason for not performing audits during offshore activities to check correct implementation of Quality Management System during project activities ?",
+      "summary_ko": "It is strange to see that audits are planned at the end of the project 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:02"
+    },
+    {
+      "comment_number": 3,
+      "section": "",
+      "comment_text": "Do you plan audit during the offshore activities on Seahorse project ?",
+      "summary_ko": "Do you plan audit during the offshore activities on Seahorse project ? 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:03"
+    }
+  ]
+}

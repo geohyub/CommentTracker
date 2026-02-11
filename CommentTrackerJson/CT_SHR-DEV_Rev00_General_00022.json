@@ -1,0 +1,49 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00022_NCR Report_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "There is no box for Client in case of major NCR. To be added for the approval of the correction and for the closure of the NCR",
+      "summary_ko": "There is no box for Client in case of major NCR 기술적 확인/수정 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01"
+    },
+    {
+      "comment_number": 2,
+      "section": "",
+      "comment_text": "Please explain what is \"feasability study\". Is this considered as an approval of the NCR by Engineering Department ?",
+      "summary_ko": "explain what is \"feasability study\" 명확화 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:02"
+    }
+  ]
+}

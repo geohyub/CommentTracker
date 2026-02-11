@@ -1,0 +1,131 @@
+{
+  "project": {
+    "project_code": "IOW0102",
+    "project_name": "Incheon OWF GP Survey",
+    "client": "Orsted",
+    "report_type": "Field OPS Report",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "reviewer": "",
+    "received_date": "2025-06-20",
+    "source_file": "OPS_Report_DP1_R0.xlsx",
+    "assignee": "KJH",
+    "comment_type": "Field"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "Front",
+      "comment_text": "a) Please correct 'Geoghysical' typo",
+      "severity": "Minor",
+      "category": "Typo",
+      "status": "Accepted",
+      "response_text": "a) It has been updated.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "High",
+      "tags": "ref:01",
+      "summary_ko": "'Geoghysical' 오타 수정 필요."
+    },
+    {
+      "comment_number": 2,
+      "section": "6, 10",
+      "comment_text": "a) Can you please write somewhere that only a section of Lot 3 was surveyed due to permitting contratins. This resulted in the nearshore 'harbour area' having no geophysical coverage in 2025",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in chapter 6.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:02",
+      "summary_ko": "Lot 3 일부만 조사 완료 기재 필요. 허가 제한으로 항만 인근 지구물리 조사 미수행(2025년)."
+    },
+    {
+      "comment_number": 3,
+      "section": "",
+      "comment_text": "a) Is it possible to include a map of the fishing gear positions? Maybe even a photo of the buoys on the sea surface",
+      "severity": "Minor",
+      "category": "FigTable",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in chapter 6.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "High",
+      "tags": "ref:03,figure",
+      "summary_ko": "어업 장비 위치 지도 포함 가능 여부. 해면 부표 사진 추가."
+    },
+    {
+      "comment_number": 4,
+      "section": "All, ii",
+      "comment_text": "a) Can you please give the full titles of each sensor, for example GNSS = global navigation satellite systems, MBES = Multibeam echo sounder, rather than just the acronym.",
+      "severity": "Minor",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "a) It has been updated.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:04",
+      "summary_ko": "센서 약어에 전체 명칭 추가 필요. GNSS, MBES 등 약어 풀어서 기재."
+    },
+    {
+      "comment_number": 5,
+      "section": "7.8, 16",
+      "comment_text": "a) Can you please indicate what frequency range was achieved  for the MUHRS",
+      "severity": "Minor",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in Chapter 8.8.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:05",
+      "summary_ko": "M-UHRS 달성 주파수 범위 명시 필요."
+    },
+    {
+      "comment_number": 6,
+      "section": "6, 10",
+      "comment_text": "a) Geoview achieved excellent data coverage in challenging conditions, so it would be valuable to document how this was accomplished. Was this due to the experience and confidence of the captain, effective use of vessel radar, crew lookouts, or the reliability of the guard vessel? It might also be useful to note whether there was strong coordination and situational awareness between the onboard survey team and bridge crew, as well as whether weather and visibility conditions played a role in gear detection and avoidance. Additionally, was any technology such as onboard cameras or drones used to visually detect fishing gear beyond standard methods? Capturing these operational details would help highlight the team’s success and inform future campaigns.",
+      "severity": "Minor",
+      "category": "Reference",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in Chapter 7.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:06",
+      "summary_ko": "어려운 조건에서 우수한 데이터 커버리지 달성 방법 기록. 선장 경험, 장비 설정, 팀 의사결정 등."
+    },
+    {
+      "comment_number": 7,
+      "section": "9",
+      "comment_text": "a) Were any incidents recorded? This could be related to crew/ vessel/ equipment saftey concerns. If no incidents recorded, please state in HSE section",
+      "severity": "Minor",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in Chapter 10.7.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:07",
+      "summary_ko": "사고 기록 여부 확인. 승조원/선박/장비 안전 관련 사고 미발생 시 HSE 섹션에 명시."
+    },
+    {
+      "comment_number": 8,
+      "section": "",
+      "comment_text": "a) It would be useful to have a operational conclusion at the end of the document, stating the project success, no major incidents, overall data quality, completion of the work scope and so on.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Accepted",
+      "response_text": "a) It has been updated in Chapter 11.",
+      "assignee": "KJH",
+      "excluded": false,
+      "confidence": "Medium",
+      "tags": "ref:08",
+      "summary_ko": "문서 말미에 운영 결론 섹션 추가. 프로젝트 성공, 주요 사고 없음, 전체 데이터 품질, 작업 범위 완료 등."
+    }
+  ]
+}

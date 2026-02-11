@@ -1,0 +1,79 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00001_MDR_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "No cover page - Please add one cover page for the MDR with document number and revision",
+      "summary_ko": "No cover page 추가/제공 필요.",
+      "severity": "Minor",
+      "category": "Reference",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01"
+    },
+    {
+      "comment_number": 2,
+      "section": "",
+      "comment_text": "Please avoid abbreviation and other additional information in the document name/title i.e. ERP_(Seahorse Project_G-OCEAN) should be named : Emergency Response Plan only",
+      "summary_ko": "오타/표기 수정 필요.",
+      "severity": "Minor",
+      "category": "Typo",
+      "status": "Accepted",
+      "response_text": "All HSE-related document titles, including the ERP, include both the abbreviation and the full name.\n- ERP(Emergency Response Plan)_Rev.1\n- HSSE(Health, Safety, Security, and Environment) PLAN_Rev.1\n- HIRA(Hazard Identification and Risk Assessment)_Rev.1",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:02,terminology"
+    },
+    {
+      "comment_number": 3,
+      "section": "",
+      "comment_text": "Please add the proposed columns : Employer Document Number ; Result of the review",
+      "summary_ko": "add the proposed columns : Employer Document Number ; Result of the review 추가/제공 필요.",
+      "severity": "Minor",
+      "category": "Reference",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:03"
+    },
+    {
+      "comment_number": 4,
+      "section": "",
+      "comment_text": "Please follow the different revision of each document (i.e. New line per revision)",
+      "summary_ko": "follow the different revision of each document (i.e 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:04"
+    }
+  ]
+}
