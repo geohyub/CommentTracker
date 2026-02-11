@@ -1,6 +1,38 @@
 """Project-level statistics and summaries."""
 
+from collections import defaultdict
 from ..db import get_connection
+
+
+def _calc_type_grouped_reduction(revisions):
+    """Calculate reduction by grouping revisions per comment_type.
+
+    Returns weighted average reduction across all types, or None if
+    no type has 2+ revisions.
+    """
+    by_type = defaultdict(list)
+    for r in revisions:
+        ct = r.get("comment_type") or "General"
+        by_type[ct].append(r)
+
+    reductions = []
+    weights = []
+    for ct, type_revs in by_type.items():
+        if len(type_revs) >= 2:
+            first = type_revs[0].get("cnt") or type_revs[0].get("total", 0)
+            last = type_revs[-1].get("cnt") or type_revs[-1].get("total", 0)
+            if first > 0:
+                rd = round((1 - last / first) * 100)
+                reductions.append(rd)
+                weights.append(first)
+
+    if not reductions:
+        return None
+
+    total_weight = sum(weights)
+    if total_weight == 0:
+        return None
+    return round(sum(r * w for r, w in zip(reductions, weights)) / total_weight)
 
 
 def get_project_stats(project_code, db_path=None):
@@ -17,12 +49,10 @@ def get_project_stats(project_code, db_path=None):
     project = dict(project)
     pid = project["id"]
 
-    # Revision summary
+    # Revision summary (no major/minor — severity hidden from UI)
     revisions = conn.execute(
         """SELECT b.revision, b.received_date, b.reviewer, b.comment_type,
                   COUNT(c.id) as total,
-                  SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major,
-                  SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor,
                   SUM(c.excluded) as excluded
            FROM batches b
            LEFT JOIN comments c ON c.batch_id = b.id
@@ -33,25 +63,15 @@ def get_project_stats(project_code, db_path=None):
     ).fetchall()
     project["revisions"] = [dict(r) for r in revisions]
 
-    # Calculate reduction percentages
-    if len(project["revisions"]) > 1:
-        for i in range(1, len(project["revisions"])):
-            prev = project["revisions"][i - 1]["total"]
-            curr = project["revisions"][i]["total"]
-            if prev > 0:
-                project["revisions"][i]["reduction"] = round((1 - curr / prev) * 100)
-            else:
-                project["revisions"][i]["reduction"] = 0
-
     # Group batches by comment_type then revision
     type_groups = {}
     for rev in project["revisions"]:
-        ct = rev.get("comment_type") or "Unknown"
+        ct = rev.get("comment_type") or "General"
         if ct not in type_groups:
             type_groups[ct] = {"comment_type": ct, "revisions": []}
         type_groups[ct]["revisions"].append(rev)
 
-    # Calculate reduction trends per comment_type group
+    # Calculate reduction trends per comment_type group (correct: same type only)
     for group in type_groups.values():
         revs = group["revisions"]
         if len(revs) >= 2:
@@ -70,11 +90,22 @@ def get_project_stats(project_code, db_path=None):
 
     project["comment_type_groups"] = list(type_groups.values())
 
-    # Overall totals
+    # Per-revision reduction: only when same comment_type as previous row
+    if len(project["revisions"]) > 1:
+        for i in range(1, len(project["revisions"])):
+            curr_rev = project["revisions"][i]
+            prev_rev = project["revisions"][i - 1]
+            if curr_rev.get("comment_type") == prev_rev.get("comment_type"):
+                prev_total = prev_rev["total"]
+                curr_total = curr_rev["total"]
+                if prev_total > 0:
+                    curr_rev["reduction"] = round((1 - curr_total / prev_total) * 100)
+                else:
+                    curr_rev["reduction"] = 0
+
+    # Overall totals (no major/minor)
     totals = conn.execute(
         """SELECT COUNT(c.id) as total,
-                  SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major,
-                  SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor,
                   SUM(c.excluded) as excluded
            FROM comments c
            JOIN batches b ON c.batch_id = b.id
@@ -83,12 +114,12 @@ def get_project_stats(project_code, db_path=None):
     ).fetchone()
     project["totals"] = dict(totals)
 
-    # Minor category breakdown
+    # Category breakdown (all categories, not just Minor)
     categories = conn.execute(
         """SELECT c.category, COUNT(*) as count
            FROM comments c
            JOIN batches b ON c.batch_id = b.id
-           WHERE b.project_id = ? AND c.severity = 'Minor'
+           WHERE b.project_id = ? AND c.excluded = 0
            GROUP BY c.category
            ORDER BY count DESC""",
         (pid,)
@@ -118,8 +149,6 @@ def get_all_projects_summary(db_path=None, sort_by="date"):
         """SELECT p.*,
                   COUNT(DISTINCT b.id) as batch_count,
                   COUNT(c.id) as total_comments,
-                  SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major_count,
-                  SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor_count,
                   MAX(b.received_date) as latest_date
            FROM projects p
            LEFT JOIN batches b ON b.project_id = p.id
@@ -131,22 +160,18 @@ def get_all_projects_summary(db_path=None, sort_by="date"):
     results = []
     for p in projects:
         pd = dict(p)
-        # Get first and last revision comment counts for reduction calc
+        # Get revisions grouped for type-aware reduction calculation
         revs = conn.execute(
-            """SELECT b.comment_type, COUNT(c.id) as cnt
+            """SELECT b.comment_type, b.revision, COUNT(c.id) as cnt
                FROM batches b
                LEFT JOIN comments c ON c.batch_id = b.id
                WHERE b.project_id = ?
                GROUP BY b.id
-               ORDER BY b.revision""",
+               ORDER BY b.comment_type, b.revision""",
             (pd["id"],)
         ).fetchall()
-        if len(revs) >= 2:
-            first = revs[0]["cnt"]
-            last = revs[-1]["cnt"]
-            pd["reduction"] = round((1 - last / first) * 100) if first > 0 else 0
-        else:
-            pd["reduction"] = None
+        revs = [dict(r) for r in revs]
+        pd["reduction"] = _calc_type_grouped_reduction(revs)
 
         # Distinct comment types for this project
         types = conn.execute(

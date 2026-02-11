@@ -49,10 +49,9 @@ class TestSearch(unittest.TestCase):
 
     def test_list_comments_filtered(self):
         comments, total = list_comments(
-            filters={"severity": "Major"}, db_path=self.db_path
+            filters={"category": "Technical"}, db_path=self.db_path
         )
-        self.assertTrue(all(c["severity"] == "Major" for c in comments))
-        self.assertEqual(total, 3)
+        self.assertTrue(all(c["category"] == "Technical" for c in comments))
 
     def test_get_comment_detail(self):
         detail = get_comment_detail(1, self.db_path)

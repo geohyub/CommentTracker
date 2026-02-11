@@ -31,12 +31,6 @@ def _add_common_filters(sql, count_sql, params, filters):
         if count_sql:
             count_sql += clause
         params.append(filters["revision"])
-    if filters.get("severity"):
-        clause = " AND c.severity = ?"
-        sql += clause
-        if count_sql:
-            count_sql += clause
-        params.append(filters["severity"])
     if filters.get("category"):
         clause = " AND c.category = ?"
         sql += clause
@@ -139,7 +133,6 @@ VALID_SORT_COLUMNS = {
     "project": "p.project_code",
     "revision": "b.revision",
     "date": "b.received_date",
-    "severity": "c.severity",
     "category": "c.category",
     "status": "c.status",
     "comment_type": "b.comment_type",

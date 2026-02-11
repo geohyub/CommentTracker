@@ -47,8 +47,6 @@ class TestImporter(unittest.TestCase):
         project, batch, comments = parse_json(self.sample_json)
         result = import_data(project, batch, comments, db_path=self.db_path)
         self.assertEqual(result["total"], 10)
-        self.assertEqual(result["major"], 3)
-        self.assertEqual(result["minor"], 7)
         self.assertEqual(result["project_code"], "JAKO2025")
 
     def test_import_duplicate_fails(self):

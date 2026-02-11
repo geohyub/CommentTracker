@@ -75,7 +75,7 @@ def generate_stats_report(output_path, client=None, db_path=None):
     # 탭 2: 프로젝트별
     ws2 = wb.create_sheet("프로젝트별")
     projects = get_all_projects_summary(db_path)
-    proj_headers = ["프로젝트", "클라이언트", "유형", "코멘트 종류", "리비전수", "전체", "Major", "Minor", "감소율"]
+    proj_headers = ["프로젝트", "클라이언트", "유형", "코멘트 종류", "리비전수", "전체", "감소율"]
     ws2.append(proj_headers)
     style_header_row(ws2, 1, len(proj_headers))
 
@@ -85,7 +85,7 @@ def generate_stats_report(output_path, client=None, db_path=None):
         ws2.append([
             p["project_code"], p["client"], p.get("report_type", ""),
             comment_types, p["batch_count"], p["total_comments"],
-            p["major_count"], p["minor_count"], reduction
+            reduction
         ])
 
     for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, max_col=len(proj_headers)):
@@ -107,15 +107,14 @@ def generate_stats_report(output_path, client=None, db_path=None):
     # 탭 3: 클라이언트별
     ws3 = wb.create_sheet("클라이언트별")
     clients = get_all_clients_summary(db_path)
-    client_headers = ["클라이언트", "프로젝트수", "전체 코멘트", "Major", "Minor", "프로젝트당 평균"]
+    client_headers = ["클라이언트", "프로젝트수", "전체 코멘트", "프로젝트당 평균"]
     ws3.append(client_headers)
     style_header_row(ws3, 1, len(client_headers))
 
     for c in clients:
         avg = round(c["total_comments"] / c["project_count"], 1) if c["project_count"] > 0 else 0
         ws3.append([
-            c["client"], c["project_count"], c["total_comments"],
-            c["major"], c["minor"], avg
+            c["client"], c["project_count"], c["total_comments"], avg
         ])
 
     for row in ws3.iter_rows(min_row=2, max_row=ws3.max_row, max_col=len(client_headers)):
@@ -126,13 +125,13 @@ def generate_stats_report(output_path, client=None, db_path=None):
     # 탭 4: 카테고리 트렌드
     ws4 = wb.create_sheet("카테고리 트렌드")
     trend_data = get_category_trend_by_period(client=client, db_path=db_path)
-    trend_headers = ["기간", "오타/문법", "가독성", "그림/표", "서식/용어", "참조/목차", "Minor 합계"]
+    trend_headers = ["기간", "기술적", "오타/문법", "가독성", "그림/표", "서식/용어", "참조/목차", "합계"]
     ws4.append(trend_headers)
     style_header_row(ws4, 1, len(trend_headers))
 
     for t in trend_data:
         ws4.append([
-            t["period"], t["Typo"], t["Readability"],
+            t["period"], t.get("Technical", 0), t["Typo"], t["Readability"],
             t["FigTable"], t["Format"], t["Reference"], t["total"]
         ])
 

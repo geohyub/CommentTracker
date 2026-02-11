@@ -168,15 +168,9 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
         batch_id = cursor.lastrowid
 
         # Insert comments
-        major_count = 0
-        minor_count = 0
         excluded_count = 0
         for c in comments_data:
             excluded = int(c.get("excluded", 0)) if c.get("excluded") is not None else 0
-            if c["severity"] == "Major":
-                major_count += 1
-            else:
-                minor_count += 1
             if excluded:
                 excluded_count += 1
 
@@ -211,8 +205,6 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
             "comment_type": comment_type,
             "revision": batch_data["revision"],
             "total": len(comments_data),
-            "major": major_count,
-            "minor": minor_count,
             "excluded": excluded_count,
             "project_id": project_id,
             "batch_id": batch_id,

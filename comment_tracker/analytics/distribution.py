@@ -15,89 +15,59 @@ def get_category_distribution(client=None, project_code=None, comment_type=None,
     """
     conn = get_connection(db_path)
 
-    sql = """
-        SELECT c.category, c.severity, COUNT(*) as count
+    base_where = " WHERE c.excluded = 0"
+    params = []
+
+    if client:
+        base_where += " AND p.client = ?"
+        params.append(client)
+    if project_code:
+        base_where += " AND p.project_code = ?"
+        params.append(project_code)
+    if comment_type:
+        base_where += " AND b.comment_type = ?"
+        params.append(comment_type)
+
+    # Category counts (no severity grouping)
+    sql = f"""
+        SELECT c.category, COUNT(*) as count
         FROM comments c
         JOIN batches b ON c.batch_id = b.id
         JOIN projects p ON b.project_id = p.id
-        WHERE c.excluded = 0
+        {base_where}
+        GROUP BY c.category ORDER BY count DESC
     """
-    params = []
-    if client:
-        sql += " AND p.client = ?"
-        params.append(client)
-    if project_code:
-        sql += " AND p.project_code = ?"
-        params.append(project_code)
-    if comment_type:
-        sql += " AND b.comment_type = ?"
-        params.append(comment_type)
-
-    sql += " GROUP BY c.category, c.severity ORDER BY count DESC"
     rows = conn.execute(sql, params).fetchall()
 
-    # Also get total
-    total_sql = """
+    # Total
+    total_sql = f"""
         SELECT COUNT(*) FROM comments c
         JOIN batches b ON c.batch_id = b.id
         JOIN projects p ON b.project_id = p.id
-        WHERE c.excluded = 0
+        {base_where}
     """
-    total_params = []
-    if client:
-        total_sql += " AND p.client = ?"
-        total_params.append(client)
-    if project_code:
-        total_sql += " AND p.project_code = ?"
-        total_params.append(project_code)
-    if comment_type:
-        total_sql += " AND b.comment_type = ?"
-        total_params.append(comment_type)
-
-    total = conn.execute(total_sql, total_params).fetchone()[0]
+    total = conn.execute(total_sql, params).fetchone()[0]
 
     result = {
         "total": total,
         "by_category": [],
-        "by_severity": {"Major": 0, "Minor": 0},
     }
 
-    cat_totals = {}
     for r in rows:
-        cat = r["category"]
-        if cat not in cat_totals:
-            cat_totals[cat] = {"category": cat, "count": 0, "Major": 0, "Minor": 0}
-        cat_totals[cat]["count"] += r["count"]
-        cat_totals[cat][r["severity"]] = r["count"]
-        result["by_severity"][r["severity"]] += r["count"]
-
-    for cat in cat_totals.values():
+        cat = {"category": r["category"], "count": r["count"]}
         cat["percentage"] = round(cat["count"] / total * 100, 1) if total > 0 else 0
         result["by_category"].append(cat)
 
-    result["by_category"].sort(key=lambda x: x["count"], reverse=True)
-
     # Status distribution
-    status_sql = """
+    status_sql = f"""
         SELECT c.status, COUNT(*) as count
         FROM comments c
         JOIN batches b ON c.batch_id = b.id
         JOIN projects p ON b.project_id = p.id
-        WHERE c.excluded = 0
+        {base_where}
+        GROUP BY c.status ORDER BY count DESC
     """
-    status_params = []
-    if client:
-        status_sql += " AND p.client = ?"
-        status_params.append(client)
-    if project_code:
-        status_sql += " AND p.project_code = ?"
-        status_params.append(project_code)
-    if comment_type:
-        status_sql += " AND b.comment_type = ?"
-        status_params.append(comment_type)
-    status_sql += " GROUP BY c.status ORDER BY count DESC"
-
-    status_rows = conn.execute(status_sql, status_params).fetchall()
+    status_rows = conn.execute(status_sql, params).fetchall()
     result["by_status"] = [dict(r) for r in status_rows]
 
     conn.close()

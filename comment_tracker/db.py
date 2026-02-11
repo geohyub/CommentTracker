@@ -173,9 +173,7 @@ def list_batches(db_path=None):
     conn = get_connection(db_path)
     rows = conn.execute("""
         SELECT b.*, p.project_code, p.project_name, p.client,
-               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id) as comment_count,
-               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id AND c.severity = 'Major') as major_count,
-               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id AND c.severity = 'Minor') as minor_count
+               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id) as comment_count
         FROM batches b
         JOIN projects p ON b.project_id = p.id
         ORDER BY b.created_at DESC

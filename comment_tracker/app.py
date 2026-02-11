@@ -113,21 +113,17 @@ def create_app(db_path=None):
         # Flash results
         if results:
             total_comments = sum(r["total"] for r in results)
-            total_major = sum(r["major"] for r in results)
-            total_minor = sum(r["minor"] for r in results)
             if len(results) == 1:
                 r = results[0]
                 flash(
                     f"{r['total']}건 코멘트 임포트 완료 "
-                    f"({r['major']} Major, {r['minor']} Minor) "
                     f"[{r['comment_type']}] "
                     f"{r['project_code']} {r['revision']}",
                     "success"
                 )
             else:
                 flash(
-                    f"{len(results)}개 파일에서 총 {total_comments}건 코멘트 임포트 완료 "
-                    f"({total_major} Major, {total_minor} Minor)",
+                    f"{len(results)}개 파일에서 총 {total_comments}건 코멘트 임포트 완료",
                     "success"
                 )
 
@@ -146,7 +142,7 @@ def create_app(db_path=None):
         sort = request.args.get("sort", "id")
         sort_dir = request.args.get("dir", "desc")
         filters = {}
-        for key in ["project", "client", "revision", "severity", "category", "status", "assignee", "comment_type"]:
+        for key in ["project", "client", "revision", "category", "status", "assignee", "comment_type"]:
             val = request.args.get(key)
             if val:
                 filters[key] = val
@@ -190,7 +186,7 @@ def create_app(db_path=None):
         results = []
         if query:
             filters = {}
-            for key in ["client", "project", "severity", "category", "status", "comment_type"]:
+            for key in ["client", "project", "category", "status", "comment_type"]:
                 val = request.args.get(key)
                 if val:
                     filters[key] = val
@@ -338,7 +334,7 @@ def create_app(db_path=None):
     @app.route("/export/comments")
     def export_comments():
         filters = {}
-        for key in ["project", "client", "revision", "severity", "category", "status", "assignee", "comment_type"]:
+        for key in ["project", "client", "revision", "category", "status", "assignee", "comment_type"]:
             val = request.args.get(key)
             if val:
                 filters[key] = val

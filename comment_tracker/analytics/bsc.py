@@ -1,6 +1,7 @@
 """BSC performance report generation."""
 
 from ..db import get_connection
+from .project_stats import _calc_type_grouped_reduction
 
 
 def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=None):
@@ -68,7 +69,7 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
     ).fetchall()
     result["category_breakdown"] = [dict(c) for c in cats]
 
-    # Improvement trends per project
+    # Improvement trends per project (type-aware reduction)
     for proj in result["projects"]:
         revs = conn.execute(
             """SELECT b.revision, b.comment_type, COUNT(c.id) as total
@@ -76,40 +77,26 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
                LEFT JOIN comments c ON c.batch_id = b.id AND c.assignee = ?
                WHERE b.project_id = (SELECT id FROM projects WHERE project_code = ?)
                GROUP BY b.id
-               ORDER BY b.revision""",
+               ORDER BY b.comment_type, b.revision""",
             (assignee, proj["project_code"])
         ).fetchall()
         rev_data = [dict(r) for r in revs]
-        if len(rev_data) >= 2:
-            first = rev_data[0]["total"]
-            last = rev_data[-1]["total"]
-            proj["reduction"] = round((1 - last / first) * 100) if first > 0 else 0
-            proj["revisions"] = rev_data
-        else:
-            proj["reduction"] = None
-            proj["revisions"] = rev_data
+        proj["revisions"] = rev_data
+        proj["reduction"] = _calc_type_grouped_reduction(rev_data)
 
     # Achievements
     achievements = []
-    # Check for zero-major final revisions
     for proj in result["projects"]:
+        if proj.get("reduction") is not None and proj["reduction"] >= 80:
+            achievements.append(
+                f"{proj['reduction']}% 코멘트 감소 달성 ({proj['project_code']})"
+            )
+        # Check for zero comments in final revision (any type)
         if proj.get("revisions") and len(proj["revisions"]) > 1:
-            last_rev = proj["revisions"][-1]["revision"]
-            major_in_final = conn.execute(
-                """SELECT COUNT(*) FROM comments c
-                   JOIN batches b ON c.batch_id = b.id
-                   JOIN projects p ON b.project_id = p.id
-                   WHERE p.project_code = ? AND b.revision = ?
-                   AND c.severity = 'Major' AND c.assignee = ?""",
-                (proj["project_code"], last_rev, assignee)
-            ).fetchone()[0]
-            if major_in_final == 0:
+            last_rev = proj["revisions"][-1]
+            if last_rev["total"] == 0:
                 achievements.append(
-                    f"0 Major comments in final revision of {proj['project_code']}"
-                )
-            if proj.get("reduction") and proj["reduction"] >= 80:
-                achievements.append(
-                    f"{proj['reduction']}% reduction in {proj['project_code']}"
+                    f"최종 리비전 코멘트 0건 달성 ({proj['project_code']} {last_rev['revision']})"
                 )
 
     result["achievements"] = achievements

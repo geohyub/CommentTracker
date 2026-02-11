@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const trendData = {{ category_trend | tojson }};
     if (trendData.length > 0) {
-        const categories = ['Typo', 'Readability', 'FigTable', 'Format', 'Reference'];
+        const categories = ['Technical', 'Typo', 'Readability', 'FigTable', 'Format', 'Reference'];
         const datasets = categories.map(cat => ({
             label: cat,
             data: trendData.map(t => t[cat] || 0),
