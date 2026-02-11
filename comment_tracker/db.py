@@ -118,9 +118,32 @@ def get_connection(db_path=None):
     return conn
 
 
+def _migrate_db(conn):
+    """Apply schema migrations for existing databases."""
+    # Check if batches table exists but lacks comment_type column
+    cols = conn.execute("PRAGMA table_info(batches)").fetchall()
+    if cols:  # table exists
+        col_names = [c[1] for c in cols]
+        if "comment_type" not in col_names:
+            conn.execute(
+                "ALTER TABLE batches ADD COLUMN comment_type TEXT NOT NULL DEFAULT 'General'"
+            )
+            # Recreate UNIQUE index (can't ALTER UNIQUE constraint, so add a new unique index)
+            # Drop old unique index if it exists and create new one
+            try:
+                conn.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_batches_type_rev "
+                    "ON batches(project_id, comment_type, revision)"
+                )
+            except Exception:
+                pass  # Index may conflict with old constraint; safe to skip
+            conn.commit()
+
+
 def init_db(db_path=None):
     """Initialize the database schema."""
     conn = get_connection(db_path)
+    _migrate_db(conn)
     conn.executescript(SCHEMA_SQL)
     conn.commit()
     conn.close()
