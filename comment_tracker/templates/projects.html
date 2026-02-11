@@ -13,6 +13,15 @@
 </div>
 
 {% if projects %}
+<!-- Sort Controls -->
+<div class="mb-3 d-flex align-items-center gap-2">
+    <span class="small text-muted me-1"><i class="bi bi-sort-down me-1"></i>정렬:</span>
+    <a href="?sort=date" class="btn btn-sm {{ 'btn-primary' if sort_by == 'date' else 'btn-outline-secondary' }}">최근 날짜</a>
+    <a href="?sort=name" class="btn btn-sm {{ 'btn-primary' if sort_by == 'name' else 'btn-outline-secondary' }}">이름순</a>
+    <a href="?sort=revision" class="btn btn-sm {{ 'btn-primary' if sort_by == 'revision' else 'btn-outline-secondary' }}">리비전 수</a>
+    <a href="?sort=comments" class="btn btn-sm {{ 'btn-primary' if sort_by == 'comments' else 'btn-outline-secondary' }}">코멘트 수</a>
+</div>
+
 <div class="row g-3">
     {% for p in projects %}
     <div class="col-xl-4 col-md-6">
@@ -30,10 +39,12 @@
                 <span class="small text-muted">클라이언트</span>
                 <span class="fw-500">{{ p.client }}</span>
             </div>
+            {% if p.latest_date %}
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="small text-muted">유형</span>
-                <span>{{ p.report_type or '-' }}</span>
+                <span class="small text-muted">최근 수신일</span>
+                <span>{{ p.latest_date }}</span>
             </div>
+            {% endif %}
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="small text-muted">리비전</span>
                 <span class="badge bg-primary">{{ p.batch_count }}</span>
@@ -51,10 +62,7 @@
             <hr class="my-2">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="small text-muted">코멘트</span>
-                <div>
-                    <span class="badge-severity badge-major me-1">{{ p.major_count }} Major</span>
-                    <span class="badge-severity badge-minor">{{ p.minor_count }} Minor</span>
-                </div>
+                <span class="fw-bold">{{ p.total_comments }}건</span>
             </div>
             {% if p.total_comments %}
             <div class="mb-2">

@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% block title %}코멘트 - Comment Tracker{% endblock %}
 
+{# Macro for building sort URL preserving current filters/page #}
+{% macro sort_url(col) %}
+{%- set new_dir = 'asc' if sort == col and sort_dir == 'desc' else 'desc' -%}
+?sort={{ col }}&dir={{ new_dir }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}
+{%- endmacro %}
+
+{# Sort indicator arrow #}
+{% macro sort_icon(col) %}
+{%- if sort == col -%}
+<i class="bi bi-caret-{{ 'up' if sort_dir == 'asc' else 'down' }}-fill ms-1"></i>
+{%- else -%}
+<i class="bi bi-caret-down text-muted opacity-25 ms-1"></i>
+{%- endif -%}
+{% endmacro %}
+
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-start">
     <div>
@@ -99,27 +114,28 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>프로젝트</th>
-                        <th>리비전</th>
-                        <th>섹션</th>
+                        <th><a href="{{ sort_url('id') }}" class="sort-header"># {{ sort_icon('id') }}</a></th>
+                        <th><a href="{{ sort_url('project') }}" class="sort-header">프로젝트 {{ sort_icon('project') }}</a></th>
+                        <th><a href="{{ sort_url('revision') }}" class="sort-header">리비전 {{ sort_icon('revision') }}</a></th>
+                        <th><a href="{{ sort_url('date') }}" class="sort-header">수신일 {{ sort_icon('date') }}</a></th>
                         <th>코멘트</th>
-                        <th>종류</th>
-                        <th>심각도</th>
-                        <th>카테고리</th>
-                        <th>상태</th>
-                        <th>담당자</th>
+                        <th><a href="{{ sort_url('comment_type') }}" class="sort-header">종류 {{ sort_icon('comment_type') }}</a></th>
+                        <th><a href="{{ sort_url('severity') }}" class="sort-header">심각도 {{ sort_icon('severity') }}</a></th>
+                        <th><a href="{{ sort_url('category') }}" class="sort-header">카테고리 {{ sort_icon('category') }}</a></th>
+                        <th><a href="{{ sort_url('status') }}" class="sort-header">상태 {{ sort_icon('status') }}</a></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for c in comments %}
-                    <tr>
+                    <tr class="comment-row" data-id="{{ c.id }}">
                         <td><a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none fw-500">{{ c.id }}</a></td>
                         <td><span class="text-nowrap">{{ c.project_code }}</span></td>
                         <td>{{ c.revision }}</td>
-                        <td class="text-nowrap">{{ c.section or '-' }}</td>
+                        <td class="text-nowrap small text-muted">{{ c.received_date or '-' }}</td>
                         <td class="comment-text" title="{{ c.comment_text }}">
-                            {{ c.comment_text }}
+                            <div class="comment-preview" onclick="toggleExpand(this)">
+                                {{ c.comment_text }}
+                            </div>
                             {% if c.summary_ko %}
                             <div class="summary-ko">{{ c.summary_ko }}</div>
                             {% endif %}
@@ -127,18 +143,15 @@
                         <td><span class="text-nowrap">{{ LABELS_KO.get(c.comment_type, c.comment_type) or '-' }}</span></td>
                         <td>
                             <span class="badge-severity badge-{{ c.severity|lower }}" title="{{ LABELS_KO.get(c.severity, '') }}">{{ c.severity }}</span>
-                            <div class="severity-desc">{{ LABELS_KO.get(c.severity, '') }}</div>
                         </td>
                         <td>
                             <span class="badge-category" title="{{ LABELS_KO.get(c.category, '') }}">{{ c.category }}</span>
-                            <div class="category-desc">{{ LABELS_KO.get(c.category, '') }}</div>
                         </td>
                         <td>
                             <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
-                                {{ c.status }}
+                                {{ LABELS_KO.get(c.status, c.status) }}
                             </span>
                         </td>
-                        <td>{{ c.assignee or '-' }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -151,19 +164,19 @@
             <nav>
                 <ul class="pagination mb-0">
                     {% if page > 1 %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&laquo;</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page - 1 }}&sort={{ sort }}&dir={{ sort_dir }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&laquo;</a></li>
                     {% endif %}
                     {% for p in range(1, total_pages + 1) %}
                     {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
                     <li class="page-item {{ 'active' if p == page }}">
-                        <a class="page-link" href="?page={{ p }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
+                        <a class="page-link" href="?page={{ p }}&sort={{ sort }}&dir={{ sort_dir }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
                     </li>
                     {% elif p == page - 3 or p == page + 3 %}
                     <li class="page-item disabled"><span class="page-link">...</span></li>
                     {% endif %}
                     {% endfor %}
                     {% if page < total_pages %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&raquo;</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page + 1 }}&sort={{ sort }}&dir={{ sort_dir }}{% for k, v in filters.items() %}&{{ k }}={{ v }}{% endfor %}">&raquo;</a></li>
                     {% endif %}
                 </ul>
             </nav>
@@ -179,4 +192,12 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleExpand(el) {
+    el.classList.toggle('expanded');
+}
+</script>
 {% endblock %}

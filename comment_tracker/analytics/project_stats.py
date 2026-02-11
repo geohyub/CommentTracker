@@ -111,15 +111,16 @@ def get_project_stats(project_code, db_path=None):
     return project
 
 
-def get_all_projects_summary(db_path=None):
-    """Get summary of all projects."""
+def get_all_projects_summary(db_path=None, sort_by="date"):
+    """Get summary of all projects. sort_by: date, revision, name, comments."""
     conn = get_connection(db_path)
     projects = conn.execute(
         """SELECT p.*,
                   COUNT(DISTINCT b.id) as batch_count,
                   COUNT(c.id) as total_comments,
                   SUM(CASE WHEN c.severity='Major' THEN 1 ELSE 0 END) as major_count,
-                  SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor_count
+                  SUM(CASE WHEN c.severity='Minor' THEN 1 ELSE 0 END) as minor_count,
+                  MAX(b.received_date) as latest_date
            FROM projects p
            LEFT JOIN batches b ON b.project_id = p.id
            LEFT JOIN comments c ON c.batch_id = b.id
@@ -180,4 +181,15 @@ def get_all_projects_summary(db_path=None):
         results.append(pd)
 
     conn.close()
+
+    # Apply sorting
+    if sort_by == "name":
+        results.sort(key=lambda x: x["project_code"])
+    elif sort_by == "revision":
+        results.sort(key=lambda x: x["batch_count"], reverse=True)
+    elif sort_by == "comments":
+        results.sort(key=lambda x: x["total_comments"], reverse=True)
+    elif sort_by == "date":
+        results.sort(key=lambda x: x["latest_date"] or "", reverse=True)
+
     return results

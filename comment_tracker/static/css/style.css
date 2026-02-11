@@ -439,9 +439,28 @@ body {
     font-size: 13px;
     line-height: 1.5;
     max-width: 400px;
+}
+
+.comment-preview {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.comment-preview:hover {
+    color: var(--accent-primary);
+}
+
+.comment-preview.expanded {
+    white-space: normal;
+    overflow: visible;
+    background: #f8fafc;
+    padding: 8px;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-primary);
+    margin: -4px -4px 4px -4px;
 }
 
 .comment-text-full {
@@ -451,6 +470,20 @@ body {
     padding: 16px;
     border-radius: 8px;
     border-left: 4px solid var(--accent-primary);
+}
+
+/* ─── Sort Headers ───────────────────────────────────── */
+.sort-header {
+    text-decoration: none !important;
+    color: var(--text-secondary) !important;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+}
+
+.sort-header:hover {
+    color: var(--accent-primary) !important;
 }
 
 /* ─── Korean Summary ─────────────────────────────────── */

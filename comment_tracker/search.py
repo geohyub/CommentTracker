@@ -134,8 +134,20 @@ def find_similar(text, limit=10, db_path=None):
     return results
 
 
-def list_comments(filters=None, limit=200, offset=0, db_path=None):
-    """List comments with optional filters. Returns (list, total_count)."""
+VALID_SORT_COLUMNS = {
+    "id": "c.id",
+    "project": "p.project_code",
+    "revision": "b.revision",
+    "date": "b.received_date",
+    "severity": "c.severity",
+    "category": "c.category",
+    "status": "c.status",
+    "comment_type": "b.comment_type",
+}
+
+
+def list_comments(filters=None, limit=200, offset=0, sort=None, sort_dir=None, db_path=None):
+    """List comments with optional filters and sorting. Returns (list, total_count)."""
     conn = get_connection(db_path)
 
     count_sql = """
@@ -158,7 +170,10 @@ def list_comments(filters=None, limit=200, offset=0, db_path=None):
 
     total = conn.execute(count_sql, params).fetchone()[0]
 
-    sql += " ORDER BY c.id DESC LIMIT ? OFFSET ?"
+    # Apply sorting
+    order_col = VALID_SORT_COLUMNS.get(sort, "c.id")
+    direction = "ASC" if sort_dir == "asc" else "DESC"
+    sql += f" ORDER BY {order_col} {direction} LIMIT ? OFFSET ?"
     params.extend([limit, offset])
 
     rows = conn.execute(sql, params).fetchall()

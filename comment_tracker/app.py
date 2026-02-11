@@ -143,6 +143,8 @@ def create_app(db_path=None):
     def comments_page():
         page = request.args.get("page", 1, type=int)
         per_page = 30
+        sort = request.args.get("sort", "id")
+        sort_dir = request.args.get("dir", "desc")
         filters = {}
         for key in ["project", "client", "revision", "severity", "category", "status", "assignee", "comment_type"]:
             val = request.args.get(key)
@@ -153,6 +155,8 @@ def create_app(db_path=None):
             filters=filters if filters else None,
             limit=per_page,
             offset=(page - 1) * per_page,
+            sort=sort,
+            sort_dir=sort_dir,
             db_path=get_db()
         )
         options = search.get_filter_options(get_db())
@@ -161,7 +165,8 @@ def create_app(db_path=None):
         return render_template("comments.html",
                                comments=comments, total=total,
                                page=page, total_pages=total_pages,
-                               filters=filters, options=options)
+                               filters=filters, options=options,
+                               sort=sort, sort_dir=sort_dir)
 
     @app.route("/comment/<int:comment_id>")
     def comment_detail(comment_id):
@@ -416,8 +421,9 @@ def create_app(db_path=None):
     # ─── Projects Management ────────────────────────────────────
     @app.route("/projects")
     def projects_page():
-        projects = project_stats.get_all_projects_summary(get_db())
-        return render_template("projects.html", projects=projects)
+        sort_by = request.args.get("sort", "date")
+        projects = project_stats.get_all_projects_summary(get_db(), sort_by=sort_by)
+        return render_template("projects.html", projects=projects, sort_by=sort_by)
 
     # ─── Settings / DB Info ─────────────────────────────────────
     @app.route("/settings")

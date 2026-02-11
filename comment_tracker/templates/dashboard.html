@@ -123,10 +123,7 @@
                                     </a>
                                 </td>
                                 <td>{{ p.client }}</td>
-                                <td>
-                                    <span class="badge-severity badge-major me-1">{{ p.major_count }}</span>
-                                    <span class="badge-severity badge-minor">{{ p.minor_count }}</span>
-                                </td>
+                                <td><span class="fw-500">{{ p.total_comments }}건</span></td>
                                 <td>
                                     {% if p.total_comments %}
                                     <div class="d-flex align-items-center gap-2">
@@ -219,12 +216,12 @@
                         <td>{{ c.project_code }}</td>
                         <td>{{ c.revision }}</td>
                         <td class="comment-text">{{ c.comment_text }}</td>
-                        <td>{{ c.comment_type }}</td>
+                        <td>{{ LABELS_KO.get(c.comment_type, c.comment_type) }}</td>
                         <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
                         <td><span class="badge-category">{{ c.category }}</span></td>
                         <td>
                             <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
-                                {{ c.status }}
+                                {{ LABELS_KO.get(c.status, c.status) }}
                             </span>
                         </td>
                     </tr>
