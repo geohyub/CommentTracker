@@ -54,7 +54,6 @@
                                 <th>#</th>
                                 <th>섹션</th>
                                 <th>코멘트</th>
-                                <th>심각도</th>
                                 <th>카테고리</th>
                                 <th>상태</th>
                                 <th>담당자</th>
@@ -72,10 +71,6 @@
                                     {% if c.summary_ko %}
                                     <div class="summary-ko">{{ c.summary_ko }}</div>
                                     {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span>
-                                    <div class="severity-desc">{{ LABELS_KO.get(c.severity, '') }}</div>
                                 </td>
                                 <td>
                                     <span class="badge-category">{{ c.category }}</span>

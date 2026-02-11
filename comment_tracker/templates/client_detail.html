@@ -92,8 +92,6 @@
                         <th>유형</th>
                         <th>리비전</th>
                         <th>전체</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th>감소율</th>
                         <th></th>
                     </tr>
@@ -109,8 +107,6 @@
                             {% endfor %}
                         </td>
                         <td>{{ p.total_comments }}</td>
-                        <td><span class="badge-severity badge-major">{{ p.major }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ p.minor }}</span></td>
                         <td>
                             {% if p.reduction is not none %}
                             <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">

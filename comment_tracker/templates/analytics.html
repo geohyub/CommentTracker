@@ -26,18 +26,8 @@
         </div>
     </div>
 
-    <!-- Severity / Status -->
-    <div class="col-xl-3">
-        <div class="card h-100">
-            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>심각도</div>
-            <div class="card-body">
-                <div class="chart-container" style="height: 300px;">
-                    <canvas id="severityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-3">
+    <!-- Status Distribution -->
+    <div class="col-xl-6">
         <div class="card h-100">
             <div class="card-header"><i class="bi bi-check2-circle me-2"></i>상태</div>
             <div class="card-body">
@@ -74,8 +64,6 @@
                         <th>유형</th>
                         <th>리비전</th>
                         <th>전체</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th>감소율</th>
                         <th></th>
                     </tr>
@@ -88,8 +76,6 @@
                         <td>{{ p.report_type or '-' }}</td>
                         <td>{{ p.batch_count }}</td>
                         <td>{{ p.total_comments }}</td>
-                        <td><span class="badge-severity badge-major">{{ p.major_count }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ p.minor_count }}</span></td>
                         <td>
                             {% if p.reduction is not none %}
                             <span class="reduction-badge {{ 'reduction-good' if p.reduction >= 70 else 'reduction-ok' if p.reduction >= 40 else 'reduction-bad' }}">
@@ -153,8 +139,6 @@
                         <th>프로젝트</th>
                         <th>배치</th>
                         <th>전체 코멘트</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -165,8 +149,6 @@
                         <td>{{ c.project_count }}</td>
                         <td>{{ c.batch_count }}</td>
                         <td>{{ c.total_comments }}</td>
-                        <td><span class="badge-severity badge-major">{{ c.major }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ c.minor }}</span></td>
                         <td><a href="{{ url_for('client_analytics', client_name=c.client) }}" class="btn btn-sm btn-outline-primary">상세</a></td>
                     </tr>
                     {% endfor %}
@@ -202,13 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
             catData.map(c => COLORS.categories[c.category] || '#94a3b8')
         );
     }
-
-    const sevData = {{ distribution.by_severity | tojson }};
-    createDoughnutChart('severityChart',
-        ['Major', 'Minor'],
-        [sevData.Major || 0, sevData.Minor || 0],
-        [COLORS.severities.Major, COLORS.severities.Minor]
-    );
 
     const statusData = {{ distribution.by_status | tojson }};
     if (statusData.length > 0) {

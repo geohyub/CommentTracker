@@ -58,7 +58,7 @@
 {% if info.comment_count > 0 %}
 <div class="row g-3 mb-4">
     <!-- Category Distribution Chart -->
-    <div class="col-xl-4 col-lg-5">
+    <div class="col-xl-6 col-lg-6">
         <div class="card h-100">
             <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분포</div>
             <div class="card-body">
@@ -69,20 +69,8 @@
         </div>
     </div>
 
-    <!-- Severity Distribution -->
-    <div class="col-xl-4 col-lg-3">
-        <div class="card h-100">
-            <div class="card-header"><i class="bi bi-exclamation-triangle-fill me-2"></i>심각도 분포</div>
-            <div class="card-body">
-                <div class="chart-container" style="height: 280px;">
-                    <canvas id="severityChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Status Distribution -->
-    <div class="col-xl-4 col-lg-4">
+    <div class="col-xl-6 col-lg-6">
         <div class="card h-100">
             <div class="card-header"><i class="bi bi-check2-circle me-2"></i>상태 분포</div>
             <div class="card-body">
@@ -164,7 +152,6 @@
                                 <th>클라이언트</th>
                                 <th>프로젝트</th>
                                 <th>코멘트</th>
-                                <th>Major</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -177,7 +164,6 @@
                                 </td>
                                 <td>{{ c.project_count }}</td>
                                 <td>{{ c.total_comments }}</td>
-                                <td><span class="badge-severity badge-major">{{ c.major }}</span></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -204,7 +190,6 @@
                         <th>리비전</th>
                         <th>코멘트</th>
                         <th>코멘트 종류</th>
-                        <th>심각도</th>
                         <th>카테고리</th>
                         <th>상태</th>
                     </tr>
@@ -217,7 +202,6 @@
                         <td>{{ c.revision }}</td>
                         <td class="comment-text">{{ c.comment_text }}</td>
                         <td>{{ LABELS_KO.get(c.comment_type, c.comment_type) }}</td>
-                        <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
                         <td><span class="badge-category">{{ c.category }}</span></td>
                         <td>
                             <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
@@ -262,14 +246,6 @@ document.addEventListener('DOMContentLoaded', function() {
             catData.map(c => COLORS.categories[c.category] || '#94a3b8')
         );
     }
-
-    // Severity Distribution
-    const sevData = {{ distribution.by_severity | tojson }};
-    createDoughnutChart('severityChart',
-        ['Major', 'Minor'],
-        [sevData.Major || 0, sevData.Minor || 0],
-        [COLORS.severities.Major, COLORS.severities.Minor]
-    );
 
     // Status Distribution
     const statusData = {{ distribution.by_status | tojson }};

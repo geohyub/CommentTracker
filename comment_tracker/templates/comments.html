@@ -55,14 +55,6 @@
                 </select>
             </div>
             <div class="col-md">
-                <label class="form-label">심각도</label>
-                <select class="form-select form-select-sm" name="severity">
-                    <option value="">전체</option>
-                    <option value="Major" {{ 'selected' if filters.get('severity') == 'Major' }}>Major</option>
-                    <option value="Minor" {{ 'selected' if filters.get('severity') == 'Minor' }}>Minor</option>
-                </select>
-            </div>
-            <div class="col-md">
                 <label class="form-label">카테고리</label>
                 <select class="form-select form-select-sm" name="category">
                     <option value="">전체</option>
@@ -120,7 +112,6 @@
                         <th><a href="{{ sort_url('date') }}" class="sort-header">수신일 {{ sort_icon('date') }}</a></th>
                         <th>코멘트</th>
                         <th><a href="{{ sort_url('comment_type') }}" class="sort-header">종류 {{ sort_icon('comment_type') }}</a></th>
-                        <th><a href="{{ sort_url('severity') }}" class="sort-header">심각도 {{ sort_icon('severity') }}</a></th>
                         <th><a href="{{ sort_url('category') }}" class="sort-header">카테고리 {{ sort_icon('category') }}</a></th>
                         <th><a href="{{ sort_url('status') }}" class="sort-header">상태 {{ sort_icon('status') }}</a></th>
                     </tr>
@@ -141,9 +132,6 @@
                             {% endif %}
                         </td>
                         <td><span class="text-nowrap">{{ LABELS_KO.get(c.comment_type, c.comment_type) or '-' }}</span></td>
-                        <td>
-                            <span class="badge-severity badge-{{ c.severity|lower }}" title="{{ LABELS_KO.get(c.severity, '') }}">{{ c.severity }}</span>
-                        </td>
                         <td>
                             <span class="badge-category" title="{{ LABELS_KO.get(c.category, '') }}">{{ c.category }}</span>
                         </td>

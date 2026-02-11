@@ -26,8 +26,6 @@
                         <th>리비전</th>
                         <th>소스 파일</th>
                         <th>코멘트</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th>수신일</th>
                         <th>작업</th>
                     </tr>
@@ -48,8 +46,6 @@
                             {{ b.source_file or '-' }}
                         </td>
                         <td><strong>{{ b.comment_count }}</strong></td>
-                        <td><span class="badge-severity badge-major">{{ b.major_count }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ b.minor_count }}</span></td>
                         <td class="text-nowrap">{{ b.received_date or '-' }}</td>
                         <td>
                             <div class="d-flex gap-1">

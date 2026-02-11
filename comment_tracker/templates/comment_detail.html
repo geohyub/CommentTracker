@@ -79,13 +79,6 @@
                     <tr><td class="text-muted">리비전</td><td>{{ comment.revision }}</td></tr>
                     <tr><td class="text-muted">섹션</td><td>{{ comment.section or '-' }}</td></tr>
                     <tr>
-                        <td class="text-muted">심각도</td>
-                        <td>
-                            <span class="badge-severity badge-{{ comment.severity|lower }}">{{ comment.severity }}</span>
-                            <span class="text-muted small ms-1">{{ LABELS_KO.get(comment.severity, '') }}</span>
-                        </td>
-                    </tr>
-                    <tr>
                         <td class="text-muted">카테고리</td>
                         <td>
                             <span class="badge-category">{{ comment.category }}</span>

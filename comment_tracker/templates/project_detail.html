@@ -15,27 +15,19 @@
 
 <!-- Summary Stats -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-label">전체 코멘트</div>
             <div class="stat-value">{{ project.totals.total }}</div>
         </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="stat-card">
-            <div class="stat-label">Major</div>
-            <div class="stat-value text-danger">{{ project.totals.major }}</div>
-            <small class="text-muted">{{ (project.totals.major / project.totals.total * 100)|round(1) if project.totals.total > 0 else 0 }}%</small>
+            <div class="stat-label">리비전</div>
+            <div class="stat-value">{{ project.revisions|length }}</div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-label">Minor</div>
-            <div class="stat-value" style="color: var(--accent-primary);">{{ project.totals.minor }}</div>
-            <small class="text-muted">{{ (project.totals.minor / project.totals.total * 100)|round(1) if project.totals.total > 0 else 0 }}%</small>
-        </div>
-    </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="stat-card">
             <div class="stat-label">제외</div>
             <div class="stat-value">{{ project.totals.excluded or 0 }}</div>
@@ -91,8 +83,6 @@
                         <th>리뷰어</th>
                         <th>코멘트 종류</th>
                         <th>전체</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th>감소율</th>
                     </tr>
                 </thead>
@@ -104,8 +94,6 @@
                         <td>{{ r.reviewer or '-' }}</td>
                         <td>{{ r.comment_type or '-' }}</td>
                         <td>{{ r.total }}</td>
-                        <td><span class="badge-severity badge-major">{{ r.major }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ r.minor }}</span></td>
                         <td>
                             {% if r.get('reduction') is not none %}
                             <span class="reduction-badge {{ 'reduction-good' if r.reduction >= 70 else 'reduction-ok' if r.reduction >= 40 else 'reduction-bad' }}">
@@ -137,8 +125,6 @@
                         <th>날짜</th>
                         <th>리뷰어</th>
                         <th>전체</th>
-                        <th>Major</th>
-                        <th>Minor</th>
                         <th>감소율</th>
                     </tr>
                 </thead>
@@ -149,8 +135,6 @@
                         <td>{{ r.received_date or '-' }}</td>
                         <td>{{ r.reviewer or '-' }}</td>
                         <td>{{ r.total }}</td>
-                        <td><span class="badge-severity badge-major">{{ r.major }}</span></td>
-                        <td><span class="badge-severity badge-minor">{{ r.minor }}</span></td>
                         <td>
                             {% if r.get('reduction') is not none %}
                             <span class="reduction-badge {{ 'reduction-good' if r.reduction >= 70 else 'reduction-ok' if r.reduction >= 40 else 'reduction-bad' }}">
@@ -204,19 +188,13 @@ document.addEventListener('DOMContentLoaded', function() {
             trendData.map(r => r.revision),
             [
                 {
-                    label: 'Major',
-                    data: trendData.map(r => r.major),
-                    backgroundColor: COLORS.severities.Major + 'cc',
-                    borderRadius: 4
-                },
-                {
-                    label: 'Minor',
-                    data: trendData.map(r => r.minor),
-                    backgroundColor: COLORS.severities.Minor + 'cc',
+                    label: '코멘트',
+                    data: trendData.map(r => r.total),
+                    backgroundColor: '#3b82f6cc',
                     borderRadius: 4
                 }
             ],
-            { plugins: { ...chartDefaults.plugins }, scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, beginAtZero: true } } }
+            { plugins: { ...chartDefaults.plugins }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
         );
     }
 
