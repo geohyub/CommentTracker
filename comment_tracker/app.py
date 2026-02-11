@@ -364,6 +364,34 @@ def create_app(db_path=None):
         dist = distribution.get_category_distribution(db_path=get_db())
         return jsonify({"info": info, "distribution": dist})
 
+    # ─── Batch Management ─────────────────────────────────────
+    @app.route("/batches")
+    def batches_page():
+        batches = database.list_batches(get_db())
+        return render_template("batches.html", batches=batches)
+
+    @app.route("/batch/<int:batch_id>")
+    def batch_detail(batch_id):
+        batch, comments = database.get_batch_detail(batch_id, get_db())
+        if not batch:
+            flash("배치를 찾을 수 없습니다.", "error")
+            return redirect(url_for("batches_page"))
+        return render_template("batch_detail.html", batch=batch, comments=comments)
+
+    @app.route("/batch/<int:batch_id>/delete", methods=["POST"])
+    def batch_delete(batch_id):
+        info = database.delete_batch(batch_id, get_db())
+        if info:
+            flash(
+                f"배치 삭제 완료: {info['project_code']} [{info['comment_type']}] "
+                f"{info['revision']} ({info['source_file']}) "
+                f"— {info['deleted_comments']}건 코멘트 삭제",
+                "success"
+            )
+        else:
+            flash("배치를 찾을 수 없습니다.", "error")
+        return redirect(url_for("batches_page"))
+
     # ─── Projects Management ────────────────────────────────────
     @app.route("/projects")
     def projects_page():

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS projects (
     created_at TEXT DEFAULT (datetime('now'))
 );
 
--- Comment batches (one per comment type + revision cycle)
+-- Comment batches (one per source file + revision cycle)
 CREATE TABLE IF NOT EXISTS batches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES projects(id),
@@ -30,11 +30,11 @@ CREATE TABLE IF NOT EXISTS batches (
     revision TEXT NOT NULL,
     reviewer TEXT,
     received_date TEXT,
-    source_file TEXT,
+    source_file TEXT NOT NULL DEFAULT '',
     total_comments INTEGER,
     notes TEXT,
     created_at TEXT DEFAULT (datetime('now')),
-    UNIQUE(project_id, comment_type, revision)
+    UNIQUE(project_id, comment_type, revision, source_file)
 );
 
 -- Individual comments
@@ -129,13 +129,6 @@ def _migrate_db(conn):
             conn.execute(
                 "ALTER TABLE batches ADD COLUMN comment_type TEXT NOT NULL DEFAULT 'General'"
             )
-            try:
-                conn.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_batches_type_rev "
-                    "ON batches(project_id, comment_type, revision)"
-                )
-            except Exception:
-                pass
             conn.commit()
 
     # Migration 2: Add summary_ko to comments
@@ -146,6 +139,25 @@ def _migrate_db(conn):
             conn.execute("ALTER TABLE comments ADD COLUMN summary_ko TEXT")
             conn.commit()
 
+    # Migration 3: Update UNIQUE constraint to include source_file
+    # Ensure source_file has no NULLs (needed for UNIQUE)
+    cols = conn.execute("PRAGMA table_info(batches)").fetchall()
+    if cols:
+        conn.execute("UPDATE batches SET source_file = '' WHERE source_file IS NULL")
+        # Drop old 3-column unique index if it exists, create new 4-column one
+        try:
+            conn.execute("DROP INDEX IF EXISTS uq_batches_type_rev")
+        except Exception:
+            pass
+        try:
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_batches_src "
+                "ON batches(project_id, comment_type, revision, source_file)"
+            )
+        except Exception:
+            pass  # May already exist or conflict with table-level constraint
+        conn.commit()
+
 
 def init_db(db_path=None):
     """Initialize the database schema."""
@@ -154,6 +166,65 @@ def init_db(db_path=None):
     conn.executescript(SCHEMA_SQL)
     conn.commit()
     conn.close()
+
+
+def list_batches(db_path=None):
+    """List all batches with project info and comment counts."""
+    conn = get_connection(db_path)
+    rows = conn.execute("""
+        SELECT b.*, p.project_code, p.project_name, p.client,
+               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id) as comment_count,
+               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id AND c.severity = 'Major') as major_count,
+               (SELECT COUNT(*) FROM comments c WHERE c.batch_id = b.id AND c.severity = 'Minor') as minor_count
+        FROM batches b
+        JOIN projects p ON b.project_id = p.id
+        ORDER BY b.created_at DESC
+    """).fetchall()
+    results = [dict(r) for r in rows]
+    conn.close()
+    return results
+
+
+def get_batch_detail(batch_id, db_path=None):
+    """Get batch info with its comments."""
+    conn = get_connection(db_path)
+    batch = conn.execute("""
+        SELECT b.*, p.project_code, p.project_name, p.client
+        FROM batches b
+        JOIN projects p ON b.project_id = p.id
+        WHERE b.id = ?
+    """, (batch_id,)).fetchone()
+    if not batch:
+        conn.close()
+        return None, []
+    batch = dict(batch)
+    comments = [dict(r) for r in conn.execute(
+        "SELECT * FROM comments WHERE batch_id = ? ORDER BY comment_number",
+        (batch_id,)
+    ).fetchall()]
+    conn.close()
+    return batch, comments
+
+
+def delete_batch(batch_id, db_path=None):
+    """Delete a batch and all its comments. Returns (project_code, revision, count)."""
+    conn = get_connection(db_path)
+    batch = conn.execute("""
+        SELECT b.id, b.revision, b.comment_type, b.source_file, p.project_code
+        FROM batches b JOIN projects p ON b.project_id = p.id
+        WHERE b.id = ?
+    """, (batch_id,)).fetchone()
+    if not batch:
+        conn.close()
+        return None
+    info = dict(batch)
+    count = conn.execute("SELECT COUNT(*) FROM comments WHERE batch_id = ?", (batch_id,)).fetchone()[0]
+    conn.execute("DELETE FROM comments WHERE batch_id = ?", (batch_id,))
+    conn.execute("DELETE FROM batches WHERE id = ?", (batch_id,))
+    conn.commit()
+    conn.close()
+    info["deleted_comments"] = count
+    return info
 
 
 def get_db_info(db_path=None):

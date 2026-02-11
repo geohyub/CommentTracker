@@ -131,18 +131,19 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
             )
             project_id = cursor.lastrowid
 
-        # Check for existing batch (match by project + comment_type + revision)
+        # Check for existing batch (match by project + comment_type + revision + source_file)
         comment_type = batch_data.get("comment_type", "General")
+        source_file = batch_data.get("source_file") or ""
         existing_batch = conn.execute(
-            "SELECT id FROM batches WHERE project_id = ? AND comment_type = ? AND revision = ?",
-            (project_id, comment_type, batch_data["revision"])
+            "SELECT id FROM batches WHERE project_id = ? AND comment_type = ? AND revision = ? AND source_file = ?",
+            (project_id, comment_type, batch_data["revision"], source_file)
         ).fetchone()
 
         if existing_batch:
             if not update:
                 raise ImportError(
-                    f"배치 {project_data['project_code']} [{comment_type}] {batch_data['revision']} 이(가) 이미 존재합니다. "
-                    "업데이트 모드를 사용하세요."
+                    f"배치 {project_data['project_code']} [{comment_type}] {batch_data['revision']} "
+                    f"({source_file}) 이(가) 이미 존재합니다. 업데이트 모드를 사용하세요."
                 )
             # Delete existing comments and batch
             conn.execute("DELETE FROM comments WHERE batch_id = ?", (existing_batch["id"],))
@@ -159,7 +160,7 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
                 batch_data["revision"],
                 batch_data.get("reviewer"),
                 batch_data.get("received_date"),
-                batch_data.get("source_file"),
+                source_file,
                 len(comments_data),
                 batch_data.get("notes"),
             )

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}배치 #{{ batch.id }} - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+            <li class="breadcrumb-item"><a href="{{ url_for('batches_page') }}">배치 관리</a></li>
+            <li class="breadcrumb-item active">배치 #{{ batch.id }}</li>
+        </ol>
+    </nav>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>{{ batch.project_code }} — {{ LABELS_KO.get(batch.comment_type, batch.comment_type) }} {{ batch.revision }}</h1>
+            <p class="subtitle">{{ batch.source_file or '소스 파일 없음' }} · {{ comments|length }}건 코멘트</p>
+        </div>
+        <form method="POST" action="{{ url_for('batch_delete', batch_id=batch.id) }}"
+              onsubmit="return confirm('정말로 이 배치를 삭제하시겠습니까?\n코멘트 {{ comments|length }}건이 삭제됩니다.')">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash me-1"></i>배치 삭제
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-4">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-info-circle-fill me-2"></i>배치 정보</div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><td class="text-muted" style="width:120px">프로젝트</td><td class="fw-500">{{ batch.project_code }}</td></tr>
+                    <tr><td class="text-muted">프로젝트명</td><td>{{ batch.project_name }}</td></tr>
+                    <tr><td class="text-muted">클라이언트</td><td>{{ batch.client }}</td></tr>
+                    <tr><td class="text-muted">코멘트 종류</td><td>{{ LABELS_KO.get(batch.comment_type, batch.comment_type) }}</td></tr>
+                    <tr><td class="text-muted">리비전</td><td>{{ batch.revision }}</td></tr>
+                    <tr><td class="text-muted">리뷰어</td><td>{{ batch.reviewer or '-' }}</td></tr>
+                    <tr><td class="text-muted">수신일</td><td>{{ batch.received_date or '-' }}</td></tr>
+                    <tr><td class="text-muted">소스 파일</td><td class="small">{{ batch.source_file or '-' }}</td></tr>
+                    <tr><td class="text-muted">등록일</td><td>{{ batch.created_at or '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-chat-dots-fill me-2"></i>코멘트 목록 ({{ comments|length }}건)</div>
+            <div class="card-body p-0">
+                {% if comments %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>섹션</th>
+                                <th>코멘트</th>
+                                <th>심각도</th>
+                                <th>카테고리</th>
+                                <th>상태</th>
+                                <th>담당자</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in comments %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none fw-500">{{ c.comment_number }}</a>
+                                </td>
+                                <td class="text-nowrap">{{ c.section or '-' }}</td>
+                                <td class="comment-text" title="{{ c.comment_text }}">
+                                    {{ c.comment_text }}
+                                    {% if c.summary_ko %}
+                                    <div class="summary-ko">{{ c.summary_ko }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span>
+                                    <div class="severity-desc">{{ LABELS_KO.get(c.severity, '') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge-category">{{ c.category }}</span>
+                                    <div class="category-desc">{{ LABELS_KO.get(c.category, '') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
+                                        {{ c.status }}
+                                    </span>
+                                </td>
+                                <td>{{ c.assignee or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>이 배치에 코멘트가 없습니다.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

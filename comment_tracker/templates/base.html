@@ -29,6 +29,9 @@
             <li class="nav-item {{ 'active' if request.endpoint == 'import_page' }}">
                 <a href="{{ url_for('import_page') }}"><i class="bi bi-cloud-upload-fill"></i> 데이터 임포트</a>
             </li>
+            <li class="nav-item {{ 'active' if request.endpoint in ('batches_page', 'batch_detail') }}">
+                <a href="{{ url_for('batches_page') }}"><i class="bi bi-collection-fill"></i> 배치 관리</a>
+            </li>
             <li class="nav-category">데이터</li>
             <li class="nav-item {{ 'active' if request.endpoint == 'projects_page' }}">
                 <a href="{{ url_for('projects_page') }}"><i class="bi bi-folder-fill"></i> 프로젝트</a>

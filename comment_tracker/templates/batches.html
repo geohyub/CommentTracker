@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}배치 관리 - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <h1>배치 관리</h1>
+        <p class="subtitle">업로드된 파일 기준으로 코멘트를 관리합니다. ({{ batches|length }}개 배치)</p>
+    </div>
+    <a href="{{ url_for('import_page') }}" class="btn btn-primary">
+        <i class="bi bi-cloud-upload-fill me-1"></i>새 데이터 임포트
+    </a>
+</div>
+
+{% if batches %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>프로젝트</th>
+                        <th>클라이언트</th>
+                        <th>종류</th>
+                        <th>리비전</th>
+                        <th>소스 파일</th>
+                        <th>코멘트</th>
+                        <th>Major</th>
+                        <th>Minor</th>
+                        <th>수신일</th>
+                        <th>작업</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in batches %}
+                    <tr>
+                        <td>{{ b.id }}</td>
+                        <td>
+                            <a href="{{ url_for('batch_detail', batch_id=b.id) }}" class="text-decoration-none fw-500">
+                                {{ b.project_code }}
+                            </a>
+                        </td>
+                        <td>{{ b.client }}</td>
+                        <td><span class="text-nowrap">{{ LABELS_KO.get(b.comment_type, b.comment_type) }}</span></td>
+                        <td><span class="badge bg-light text-dark">{{ b.revision }}</span></td>
+                        <td class="text-muted small" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ b.source_file }}">
+                            {{ b.source_file or '-' }}
+                        </td>
+                        <td><strong>{{ b.comment_count }}</strong></td>
+                        <td><span class="badge-severity badge-major">{{ b.major_count }}</span></td>
+                        <td><span class="badge-severity badge-minor">{{ b.minor_count }}</span></td>
+                        <td class="text-nowrap">{{ b.received_date or '-' }}</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ url_for('batch_detail', batch_id=b.id) }}" class="btn btn-sm btn-outline-primary" title="상세 보기">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('batch_delete', batch_id=b.id) }}"
+                                      onsubmit="return confirm('정말로 이 배치를 삭제하시겠습니까?\n\n{{ b.project_code }} [{{ b.comment_type }}] {{ b.revision }}\n소스: {{ b.source_file }}\n코멘트 {{ b.comment_count }}건이 삭제됩니다.')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="배치 삭제">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>업로드된 배치가 없습니다</h5>
+            <p>데이터를 임포트하면 여기에 배치 목록이 표시됩니다.</p>
+            <a href="{{ url_for('import_page') }}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload-fill me-2"></i>데이터 임포트
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
