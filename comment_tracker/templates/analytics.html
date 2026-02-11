@@ -105,6 +105,7 @@
                     <tr>
                         <th>테마</th>
                         <th>발생횟수</th>
+                        <th>관련성</th>
                         <th>프로젝트</th>
                         <th>클라이언트</th>
                         <th>카테고리</th>
@@ -115,6 +116,11 @@
                     <tr>
                         <td class="fw-500">{{ t.term }}</td>
                         <td><span class="badge bg-primary">{{ t.occurrences }}</span></td>
+                        <td>
+                            {% if t.relevance is defined %}
+                            <span class="badge bg-{{ 'success' if t.relevance >= 40 else 'warning text-dark' if t.relevance >= 20 else 'secondary' }}">{{ t.relevance }}</span>
+                            {% endif %}
+                        </td>
                         <td>{{ t.projects | join(', ') }}</td>
                         <td>{{ t.clients | join(', ') }}</td>
                         <td><span class="badge-category">{{ t.primary_category }}</span></td>

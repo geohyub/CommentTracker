@@ -22,7 +22,14 @@
                 <span class="badge-ll-type badge-{{ c.type|lower }} me-2">{{ c.type }}</span>
                 <strong>{{ c.title }}</strong>
             </div>
-            <span class="badge bg-primary">{{ c.occurrences }}건 발생</span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary">{{ c.occurrences }}건 발생</span>
+                {% if c.relevance %}
+                <span class="badge bg-{{ 'success' if c.relevance >= 40 else 'warning text-dark' if c.relevance >= 20 else 'secondary' }}" title="관련성 점수">
+                    <i class="bi bi-star-fill me-1"></i>{{ c.relevance }}
+                </span>
+                {% endif %}
+            </div>
         </div>
 
         <div class="row g-3 mt-1">

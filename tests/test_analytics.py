@@ -78,9 +78,10 @@ class TestAnalytics(unittest.TestCase):
         self.assertGreater(dist["total"], 0)
 
     def test_extract_terms(self):
-        terms = extract_terms("Figure resolution is too low for print")
-        self.assertIn("figure resolution", terms)
+        terms = extract_terms("Seabed resolution is too low for bathymetry")
+        self.assertIn("seabed resolution", terms)
         self.assertIn("resolution", terms)
+        self.assertIn("bathymetry", terms)
 
     def test_recurring_themes(self):
         # With 2 projects, may or may not find recurring themes
