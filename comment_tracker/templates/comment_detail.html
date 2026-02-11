@@ -20,6 +20,12 @@
             <div class="card-body">
                 <div class="comment-text-full mb-3">{{ comment.comment_text }}</div>
 
+                {% if comment.summary_ko %}
+                <div class="summary-ko-detail mb-3">
+                    <i class="bi bi-translate me-1"></i><strong>한글 요약:</strong> {{ comment.summary_ko }}
+                </div>
+                {% endif %}
+
                 {% if comment.response_text %}
                 <h6 class="fw-bold mt-4 mb-2"><i class="bi bi-reply-fill me-1"></i>응답</h6>
                 <div class="comment-text-full" style="border-left-color: #10b981;">
@@ -74,9 +80,18 @@
                     <tr><td class="text-muted">섹션</td><td>{{ comment.section or '-' }}</td></tr>
                     <tr>
                         <td class="text-muted">심각도</td>
-                        <td><span class="badge-severity badge-{{ comment.severity|lower }}">{{ comment.severity }}</span></td>
+                        <td>
+                            <span class="badge-severity badge-{{ comment.severity|lower }}">{{ comment.severity }}</span>
+                            <span class="text-muted small ms-1">{{ LABELS_KO.get(comment.severity, '') }}</span>
+                        </td>
                     </tr>
-                    <tr><td class="text-muted">카테고리</td><td><span class="badge-category">{{ comment.category }}</span></td></tr>
+                    <tr>
+                        <td class="text-muted">카테고리</td>
+                        <td>
+                            <span class="badge-category">{{ comment.category }}</span>
+                            <span class="text-muted small ms-1">{{ LABELS_KO.get(comment.category, '') }}</span>
+                        </td>
+                    </tr>
                     <tr>
                         <td class="text-muted">상태</td>
                         <td>

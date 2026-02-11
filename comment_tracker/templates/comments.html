@@ -118,10 +118,21 @@
                         <td><span class="text-nowrap">{{ c.project_code }}</span></td>
                         <td>{{ c.revision }}</td>
                         <td class="text-nowrap">{{ c.section or '-' }}</td>
-                        <td class="comment-text" title="{{ c.comment_text }}">{{ c.comment_text }}</td>
-                        <td>{{ c.comment_type or '-' }}</td>
-                        <td><span class="badge-severity badge-{{ c.severity|lower }}">{{ c.severity }}</span></td>
-                        <td><span class="badge-category">{{ c.category }}</span></td>
+                        <td class="comment-text" title="{{ c.comment_text }}">
+                            {{ c.comment_text }}
+                            {% if c.summary_ko %}
+                            <div class="summary-ko">{{ c.summary_ko }}</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-nowrap">{{ LABELS_KO.get(c.comment_type, c.comment_type) or '-' }}</span></td>
+                        <td>
+                            <span class="badge-severity badge-{{ c.severity|lower }}" title="{{ LABELS_KO.get(c.severity, '') }}">{{ c.severity }}</span>
+                            <div class="severity-desc">{{ LABELS_KO.get(c.severity, '') }}</div>
+                        </td>
+                        <td>
+                            <span class="badge-category" title="{{ LABELS_KO.get(c.category, '') }}">{{ c.category }}</span>
+                            <div class="category-desc">{{ LABELS_KO.get(c.category, '') }}</div>
+                        </td>
                         <td>
                             <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
                                 {{ c.status }}

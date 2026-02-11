@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS comments (
     comment_number INTEGER NOT NULL,
     section TEXT,
     comment_text TEXT NOT NULL,
+    summary_ko TEXT,
     severity TEXT NOT NULL CHECK(severity IN ('Major', 'Minor')),
     category TEXT NOT NULL,
     status TEXT NOT NULL CHECK(status IN ('Accepted', 'Accepted (modified)', 'Noted', 'Rejected')),
@@ -120,23 +121,29 @@ def get_connection(db_path=None):
 
 def _migrate_db(conn):
     """Apply schema migrations for existing databases."""
-    # Check if batches table exists but lacks comment_type column
+    # Migration 1: Add comment_type to batches
     cols = conn.execute("PRAGMA table_info(batches)").fetchall()
-    if cols:  # table exists
+    if cols:
         col_names = [c[1] for c in cols]
         if "comment_type" not in col_names:
             conn.execute(
                 "ALTER TABLE batches ADD COLUMN comment_type TEXT NOT NULL DEFAULT 'General'"
             )
-            # Recreate UNIQUE index (can't ALTER UNIQUE constraint, so add a new unique index)
-            # Drop old unique index if it exists and create new one
             try:
                 conn.execute(
                     "CREATE UNIQUE INDEX IF NOT EXISTS uq_batches_type_rev "
                     "ON batches(project_id, comment_type, revision)"
                 )
             except Exception:
-                pass  # Index may conflict with old constraint; safe to skip
+                pass
+            conn.commit()
+
+    # Migration 2: Add summary_ko to comments
+    cols = conn.execute("PRAGMA table_info(comments)").fetchall()
+    if cols:
+        col_names = [c[1] for c in cols]
+        if "summary_ko" not in col_names:
+            conn.execute("ALTER TABLE comments ADD COLUMN summary_ko TEXT")
             conn.commit()
 
 

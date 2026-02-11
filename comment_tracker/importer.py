@@ -181,14 +181,15 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
 
             conn.execute(
                 """INSERT INTO comments (batch_id, comment_number, section, comment_text,
-                   severity, category, status, response_text, assignee, resolved_date,
-                   excluded, exclude_reason, confidence, tags)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   summary_ko, severity, category, status, response_text, assignee,
+                   resolved_date, excluded, exclude_reason, confidence, tags)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     batch_id,
                     int(c["comment_number"]),
                     c.get("section"),
                     c["comment_text"],
+                    c.get("summary_ko"),
                     c["severity"],
                     c["category"],
                     c["status"],

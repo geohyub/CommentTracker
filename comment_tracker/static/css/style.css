@@ -453,6 +453,36 @@ body {
     border-left: 4px solid var(--accent-primary);
 }
 
+/* ─── Korean Summary ─────────────────────────────────── */
+.summary-ko {
+    font-size: 12px;
+    color: #475569;
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: #f0f9ff;
+    border-radius: 4px;
+    border-left: 2px solid #0ea5e9;
+    white-space: normal;
+}
+
+.summary-ko-detail {
+    font-size: 14px;
+    color: #1e40af;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+    line-height: 1.6;
+}
+
+/* ─── Severity/Category Description ──────────────────── */
+.severity-desc, .category-desc {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    white-space: nowrap;
+}
+
 /* ─── Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
     .sidebar {

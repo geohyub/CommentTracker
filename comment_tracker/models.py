@@ -98,6 +98,7 @@ class Comment:
     resolved_date: Optional[str] = None
     excluded: int = 0
     exclude_reason: Optional[str] = None
+    summary_ko: Optional[str] = None
     confidence: str = "High"
     tags: Optional[str] = None
     id: Optional[int] = None
