@@ -115,10 +115,10 @@
                                 <td>
                                     {% if p.total_comments %}
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="progress-thin flex-grow-1" style="min-width:60px">
-                                            <div class="progress-bar bg-success" style="width: {{ p.closed_rate }}%"></div>
+                                        <div class="progress-thin flex-grow-1" style="min-width:80px">
+                                            <div class="progress-bar {{ 'rate-high' if p.closed_rate >= 80 else 'rate-mid' if p.closed_rate >= 40 else 'rate-low' }}" style="width: {{ p.closed_rate }}%"></div>
                                         </div>
-                                        <span class="small fw-500 text-nowrap">{{ p.closed_rate }}%</span>
+                                        <span class="small fw-500 text-nowrap {{ 'text-success' if p.closed_rate >= 80 else 'text-warning' if p.closed_rate >= 40 else 'text-danger' }}">{{ p.closed_rate }}%</span>
                                     </div>
                                     {% endif %}
                                 </td>

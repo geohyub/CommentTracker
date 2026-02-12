@@ -308,14 +308,20 @@ body {
 
 /* ─── Progress Bars ───────────────────────────────────── */
 .progress-thin {
-    height: 6px;
-    border-radius: 3px;
+    height: 8px;
+    border-radius: 4px;
     background: #e2e8f0;
+    overflow: hidden;
 }
 
 .progress-thin .progress-bar {
-    border-radius: 3px;
+    border-radius: 4px;
+    transition: width 0.6s ease;
 }
+
+.progress-bar.rate-high { background: linear-gradient(90deg, #10b981, #34d399); }
+.progress-bar.rate-mid { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.progress-bar.rate-low { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 /* ─── Forms ───────────────────────────────────────────── */
 .form-control, .form-select {
