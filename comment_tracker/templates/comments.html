@@ -23,11 +23,14 @@
         <p class="subtitle">{{ total }} 건 검색됨</p>
     </div>
     <div>
+        <a href="{{ url_for('export_comments', format='excel', **filters) }}" class="btn btn-outline-success btn-sm me-2">
+            <i class="bi bi-file-earmark-excel me-1"></i>Excel
+        </a>
         <a href="{{ url_for('export_comments', format='csv', **filters) }}" class="btn btn-outline-primary btn-sm me-2">
-            <i class="bi bi-download me-1"></i>CSV 내보내기
+            <i class="bi bi-download me-1"></i>CSV
         </a>
         <a href="{{ url_for('export_comments', format='json', **filters) }}" class="btn btn-outline-primary btn-sm">
-            <i class="bi bi-download me-1"></i>JSON 내보내기
+            <i class="bi bi-download me-1"></i>JSON
         </a>
     </div>
 </div>
@@ -85,6 +88,7 @@
                 <label class="form-label">담당자</label>
                 <select class="form-select form-select-sm" name="assignee">
                     <option value="">전체</option>
+                    <option value="__unassigned__" {{ 'selected' if filters.get('assignee') == '__unassigned__' }}>미배정</option>
                     {% for a in options.assignees %}
                     <option value="{{ a }}" {{ 'selected' if filters.get('assignee') == a }}>{{ a }}</option>
                     {% endfor %}
@@ -98,6 +102,25 @@
     </div>
 </div>
 
+<!-- Bulk Action Bar -->
+<div class="card mb-3" id="bulkBar" style="display:none;">
+    <div class="card-body py-2">
+        <form method="POST" action="{{ url_for('comments_bulk') }}" id="bulkForm" class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="bulkCount">0건 선택</span>
+            <select class="form-select form-select-sm" name="action" id="bulkAction" style="width: auto;" required>
+                <option value="">작업 선택...</option>
+                <option value="status">상태 변경</option>
+                <option value="assignee">담당자 변경</option>
+                <option value="exclude">제외 처리</option>
+                <option value="include">제외 해제</option>
+            </select>
+            <input type="text" class="form-control form-control-sm" name="value" id="bulkValue" placeholder="값 입력" style="width: 200px;">
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check-lg me-1"></i>적용</button>
+            <div id="bulkIdsContainer"></div>
+        </form>
+    </div>
+</div>
+
 <!-- Comments Table -->
 <div class="card">
     <div class="card-body p-0">
@@ -106,6 +129,7 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th style="width: 30px;"><input type="checkbox" id="selectAll" class="form-check-input"></th>
                         <th><a href="{{ sort_url('id') }}" class="sort-header"># {{ sort_icon('id') }}</a></th>
                         <th><a href="{{ sort_url('project') }}" class="sort-header">프로젝트 {{ sort_icon('project') }}</a></th>
                         <th><a href="{{ sort_url('revision') }}" class="sort-header">리비전 {{ sort_icon('revision') }}</a></th>
@@ -119,6 +143,7 @@
                 <tbody>
                     {% for c in comments %}
                     <tr class="comment-row" data-id="{{ c.id }}">
+                        <td><input type="checkbox" class="form-check-input bulk-check" value="{{ c.id }}"></td>
                         <td><a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none fw-500">{{ c.id }}</a></td>
                         <td><span class="text-nowrap">{{ c.project_code }}</span></td>
                         <td>{{ c.revision }}</td>
@@ -187,5 +212,70 @@
 function toggleExpand(el) {
     el.classList.toggle('expanded');
 }
+
+// Bulk action logic
+(function() {
+    const selectAll = document.getElementById('selectAll');
+    const bulkBar = document.getElementById('bulkBar');
+    const bulkCount = document.getElementById('bulkCount');
+    const bulkForm = document.getElementById('bulkForm');
+    const bulkIdsContainer = document.getElementById('bulkIdsContainer');
+    const bulkAction = document.getElementById('bulkAction');
+    const bulkValue = document.getElementById('bulkValue');
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.bulk-check:checked');
+        if (checked.length > 0) {
+            bulkBar.style.display = '';
+            bulkCount.textContent = checked.length + '건 선택';
+        } else {
+            bulkBar.style.display = 'none';
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = this.checked);
+            updateBulkBar();
+        });
+    }
+
+    document.querySelectorAll('.bulk-check').forEach(cb => {
+        cb.addEventListener('change', updateBulkBar);
+    });
+
+    // Update placeholder based on action
+    if (bulkAction) {
+        bulkAction.addEventListener('change', function() {
+            if (this.value === 'status') {
+                bulkValue.placeholder = 'Accepted / Noted / Rejected';
+            } else if (this.value === 'assignee') {
+                bulkValue.placeholder = '담당자명 (빈칸=해제)';
+            } else if (this.value === 'exclude') {
+                bulkValue.placeholder = '제외 사유';
+            } else {
+                bulkValue.placeholder = '값 입력';
+            }
+        });
+    }
+
+    // Before submit, inject selected IDs
+    if (bulkForm) {
+        bulkForm.addEventListener('submit', function(e) {
+            bulkIdsContainer.innerHTML = '';
+            document.querySelectorAll('.bulk-check:checked').forEach(cb => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'comment_ids';
+                input.value = cb.value;
+                bulkIdsContainer.appendChild(input);
+            });
+            if (!document.querySelectorAll('.bulk-check:checked').length) {
+                e.preventDefault();
+                alert('코멘트를 선택하세요.');
+            }
+        });
+    }
+})();
 </script>
 {% endblock %}

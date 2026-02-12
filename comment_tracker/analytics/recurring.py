@@ -1,11 +1,17 @@
-"""Recurring theme detection across projects."""
+"""Recurring issue detection via comment similarity clustering.
+
+Instead of extracting keyword frequencies (which produces noise like "vessel",
+"position", "however"), this module clusters SIMILAR COMMENTS together to
+identify the actual recurring issues across projects.
+"""
 
 import re
 from collections import Counter, defaultdict
 from ..db import get_connection
 
-# Basic English stop words
-STOP_WORDS = {
+# Expanded stop words — everything that is NOT an actual issue description
+_STOP_WORDS = {
+    # English function words
     "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
     "have", "has", "had", "do", "does", "did", "will", "would", "could",
     "should", "may", "might", "shall", "can", "need", "must", "ought",
@@ -20,20 +26,23 @@ STOP_WORDS = {
     "further", "once", "it", "its", "i", "me", "my", "we", "our",
     "you", "your", "he", "him", "his", "she", "her", "they", "them",
     "about", "up", "out", "if", "over", "down", "off", "much", "well",
-    "back", "still", "even", "made", "get", "got", "make", "like",
-    "per", "new", "old", "one", "two", "three",
-}
-
-# Domain-specific stop words: operational/status/tool terms common in
-# geophysical/marine survey report workflows but NOT actual issues
-DOMAIN_STOP_WORDS = {
-    # Comment/review workflow status
+    "back", "still", "even", "per", "new", "old",
+    "one", "two", "three", "four", "five", "six", "seven", "eight",
+    "nine", "ten", "first", "second", "third", "last",
+    # Review/comment workflow
     "closed", "open", "accepted", "noted", "rejected", "modified",
     "resolved", "pending", "completed", "approved", "submitted",
     "reviewed", "addressed", "incorporated", "acknowledged",
-    # Generic report/document terms
     "please", "ensure", "check", "note", "see", "refer", "provide",
     "update", "add", "remove", "change", "modify", "correct", "fix",
+    "consider", "suggest", "recommend", "include", "confirm", "verify",
+    "added", "updated", "removed", "changed", "corrected", "fixed",
+    "replaced", "moved", "deleted", "inserted", "edited", "revised",
+    "mentioned", "stated", "written", "shown", "presented", "given",
+    "used", "required", "needed", "found", "made", "done", "applied",
+    "identified", "indicated", "expected", "agreed", "discussed",
+    "clarify", "clarified", "clarification",
+    # Document/report terms
     "comment", "comments", "report", "reports", "section", "sections",
     "page", "pages", "paragraph", "paragraphs", "line", "lines",
     "table", "tables", "figure", "figures", "appendix", "chapter",
@@ -41,204 +50,228 @@ DOMAIN_STOP_WORDS = {
     "file", "files", "sheet", "list", "draft", "final", "issue",
     "version", "copy", "part", "parts", "description", "title",
     "header", "footer", "content", "contents", "index", "cover",
-    "attachment", "annex", "summary", "detail", "details",
-    "rev", "revision", "revisions", "batch", "batch",
-    # Common verbs in review context
-    "should", "shall", "consider", "suggest", "recommend", "include",
-    "added", "updated", "removed", "changed", "corrected", "fixed",
-    "replaced", "moved", "deleted", "inserted", "edited", "revised",
-    "mentioned", "stated", "written", "shown", "presented", "given",
-    "used", "required", "needed", "found", "noted", "made", "done",
-    # Software/tool names common in geophysical surveys
+    "attachment", "annex", "summary", "detail", "details", "result",
+    "results", "information", "reference", "references", "example",
+    "rev", "revision", "revisions", "batch", "type", "format",
+    # Generic survey/project terms
+    "project", "client", "survey", "surveys", "vessel", "vessels",
+    "survey vessel", "field", "area", "location", "site", "zone",
+    "representative", "contractor", "company", "operator",
+    "operations", "operation", "mob", "demob", "mobilisation",
+    "testing", "test", "tests", "method", "methods", "procedure",
+    "plan", "plans", "system", "systems", "equipment",
+    # Equipment names
     "geoview", "kingdom", "petrel", "oasis", "montaj", "geosoft",
     "arcgis", "qgis", "surfer", "matlab", "python", "excel",
-    # Common generic adjectives/adverbs
-    "above", "below", "previous", "following", "current", "latest",
-    "first", "last", "next", "same", "different", "various",
-    "several", "many", "general", "specific", "total", "minor",
-    "major", "main", "additional", "relevant", "appropriate",
-    "correct", "incorrect", "wrong", "right", "good", "better",
-    "missing", "available", "applicable", "necessary", "required",
-    "suggested", "recommended", "proposed",
+    "mbes", "sbp", "sss", "mag", "usbl", "dgps", "gnss", "ins",
+    # Generic adjectives/adverbs/verbs
+    "previous", "following", "current", "latest", "different",
+    "various", "several", "many", "general", "specific", "total",
+    "minor", "major", "main", "additional", "relevant", "appropriate",
+    "incorrect", "wrong", "right", "good", "better", "missing",
+    "available", "applicable", "necessary", "proposed", "existing",
+    "however", "therefore", "although", "whereas", "furthermore",
+    "respectively", "approximately", "accordingly", "similarly",
+    "get", "got", "make", "like", "take", "set", "put", "run",
 }
 
-# Merge all stop words
-ALL_STOP_WORDS = STOP_WORDS | DOMAIN_STOP_WORDS
 
-
-def _is_noise_token(word):
-    """Check if a word is noise (numbers, version strings, short words, etc.)."""
-    if len(word) < 3:
-        return True
-    if word in ALL_STOP_WORDS:
-        return True
-    # Pure numbers or version-like strings (e.g., "v2", "3rd", "100")
-    if re.match(r'^[v]?\d+[\.\-]?\d*$', word):
-        return True
-    # File extensions
-    if re.match(r'^\w{1,4}$', word) and word in {
-        "pdf", "xlsx", "docx", "csv", "jpg", "png", "tif", "tiff",
-        "shp", "sgy", "segy", "las", "dat", "txt", "xml", "html",
-    }:
-        return True
-    return False
-
-
-def _is_quality_bigram(w1, w2):
-    """Check if a bigram is meaningful (not just two common words)."""
-    # At least one word should be somewhat specific (6+ chars or not a
-    # basic English word)
-    basic_short = {
-        "the", "and", "for", "are", "was", "were", "has", "had", "not",
-        "but", "all", "can", "her", "his", "its", "our", "who", "how",
-    }
-    both_trivial = (len(w1) <= 4 and w1 in basic_short) and \
-                   (len(w2) <= 4 and w2 in basic_short)
-    if both_trivial:
-        return False
-    return True
-
-
-def extract_terms(text):
-    """Extract significant terms and bigrams from text.
-
-    Returns set of terms with basic noise filtering.
-    """
+def _tokenize(text):
+    """Extract significant word set from comment text."""
     text = text.lower()
     text = re.sub(r'[^\w\s]', ' ', text)
-    words = [w for w in text.split() if not _is_noise_token(w)]
-
-    terms = set()
-    # Only keep unigrams that are 6+ chars (shorter unigrams tend to be noise)
-    for w in words:
-        if len(w) >= 6:
-            terms.add(w)
-
-    # Add quality bigrams
-    for i in range(len(words) - 1):
-        if _is_quality_bigram(words[i], words[i + 1]):
-            bigram = f"{words[i]} {words[i + 1]}"
-            terms.add(bigram)
-
-    return terms
+    words = []
+    for w in text.split():
+        if len(w) < 3:
+            continue
+        if w in _STOP_WORDS:
+            continue
+        if re.match(r'^[v]?\d+[\.\-]?\d*$', w):
+            continue
+        words.append(w)
+    return set(words)
 
 
-def _compute_relevance_score(occurrences, project_count, client_count,
-                             primary_category, is_bigram):
-    """Compute a relevance score for a theme.
+def _jaccard(a, b):
+    """Jaccard similarity between two sets."""
+    if not a or not b:
+        return 0.0
+    return len(a & b) / len(a | b)
 
-    Higher scores = more meaningful L&L candidates.
+
+def _cluster_comments(comments, threshold=0.30):
+    """Cluster comments by Jaccard similarity of their word sets.
+
+    Greedy single-pass: each comment joins the most similar existing
+    cluster, or starts a new one.
     """
+    clusters = []  # [(seed_words, [comment_dicts])]
+
+    for c in comments:
+        best_idx = -1
+        best_sim = 0.0
+
+        for i, (seed_words, _members) in enumerate(clusters):
+            sim = _jaccard(c["words"], seed_words)
+            if sim > best_sim:
+                best_sim = sim
+                best_idx = i
+
+        if best_sim >= threshold and best_idx >= 0:
+            clusters[best_idx][1].append(c)
+        else:
+            clusters.append((set(c["words"]), [c]))
+
+    return clusters
+
+
+def _pick_representative(members):
+    """Pick the most representative comment from a cluster.
+
+    Choose the comment whose word set has the highest average similarity
+    to all other members.
+    """
+    if len(members) == 1:
+        return members[0]
+
+    best = members[0]
+    best_score = 0.0
+    for m in members:
+        score = sum(_jaccard(m["words"], other["words"])
+                    for other in members if other is not m)
+        if score > best_score:
+            best_score = score
+            best = m
+    return best
+
+
+def _make_summary(representative_text, common_words):
+    """Create a short summary from the representative comment.
+
+    Truncates to ~120 chars, preferring sentence boundaries.
+    """
+    text = representative_text.strip()
+    if len(text) <= 120:
+        return text
+    # Try to cut at sentence boundary
+    for end in [". ", ".\n", "; "]:
+        idx = text.find(end, 60, 130)
+        if idx > 0:
+            return text[:idx + 1]
+    return text[:117] + "..."
+
+
+def _compute_relevance(count, project_count, client_count, primary_category):
+    """Score a cluster by how actionable/important it is for L&L."""
     score = 0.0
-
-    # Base: occurrence count (diminishing returns)
-    score += min(occurrences, 30) * 1.0
-
-    # Multi-project bonus (strong signal)
-    score += (project_count - 1) * 5.0
-
-    # Multi-client bonus (strongest signal — same issue from different clients)
-    score += (client_count - 1) * 8.0
-
-    # Category weight: Technical issues are more actionable for L&L
-    category_weights = {
-        "Technical": 2.0,
-        "Reference": 1.5,
-        "FigTable": 1.3,
-        "Readability": 1.0,
-        "Format": 0.8,
-        "Typo": 0.5,
+    score += min(count, 30) * 1.0
+    score += (project_count - 1) * 8.0
+    score += (client_count - 1) * 12.0
+    weights = {
+        "Technical": 2.0, "Reference": 1.5, "FigTable": 1.3,
+        "Readability": 1.0, "Format": 0.8, "Typo": 0.5,
     }
-    score *= category_weights.get(primary_category, 1.0)
-
-    # Bigram bonus (more specific = better)
-    if is_bigram:
-        score *= 1.3
-
+    score *= weights.get(primary_category, 1.0)
     return round(score, 1)
 
 
 def find_recurring_themes(min_occurrences=3, min_projects=2, db_path=None):
-    """Find comment themes that appear across multiple projects.
+    """Find recurring issues by clustering similar comments.
 
-    Returns list of theme dicts sorted by relevance score.
+    Returns list of cluster dicts sorted by relevance.
     """
     conn = get_connection(db_path)
-
     rows = conn.execute(
-        """SELECT c.id, c.comment_text, c.category, c.severity,
+        """SELECT c.id, c.comment_text, c.category,
                   p.project_code, p.client
            FROM comments c
            JOIN batches b ON c.batch_id = b.id
            JOIN projects p ON b.project_id = p.id
            WHERE c.excluded = 0"""
     ).fetchall()
+    conn.close()
 
     if not rows:
-        conn.close()
         return []
 
-    # Build term → comment mapping
-    term_comments = defaultdict(list)
+    # Tokenize all comments
+    comments = []
     for r in rows:
-        terms = extract_terms(r["comment_text"])
-        for term in terms:
-            term_comments[term].append({
+        words = _tokenize(r["comment_text"])
+        if len(words) >= 2:
+            comments.append({
                 "id": r["id"],
                 "text": r["comment_text"],
+                "words": words,
                 "category": r["category"],
-                "severity": r["severity"],
                 "project": r["project_code"],
                 "client": r["client"],
             })
 
-    # Filter by thresholds and compute relevance
+    # Cluster by similarity
+    raw_clusters = _cluster_comments(comments, threshold=0.30)
+
+    # Filter and rank
     themes = []
-    for term, comments in term_comments.items():
-        unique_projects = set(c["project"] for c in comments)
-        unique_clients = set(c["client"] for c in comments)
+    for seed_words, members in raw_clusters:
+        projects = set(m["project"] for m in members)
+        clients = set(m["client"] for m in members)
 
-        if len(comments) >= min_occurrences and len(unique_projects) >= min_projects:
-            cats = Counter(c["category"] for c in comments)
-            primary_category = cats.most_common(1)[0][0]
-            is_bigram = " " in term
+        if len(members) < min_occurrences or len(projects) < min_projects:
+            continue
 
-            relevance = _compute_relevance_score(
-                len(comments), len(unique_projects), len(unique_clients),
-                primary_category, is_bigram,
-            )
+        cats = Counter(m["category"] for m in members)
+        primary_category = cats.most_common(1)[0][0]
 
-            themes.append({
-                "term": term,
-                "occurrences": len(comments),
-                "projects": sorted(unique_projects),
-                "project_count": len(unique_projects),
-                "clients": sorted(unique_clients),
-                "client_count": len(unique_clients),
-                "primary_category": primary_category,
-                "category_breakdown": dict(cats.most_common()),
-                "example_comments": [c["text"] for c in comments[:3]],
-                "relevance": relevance,
-            })
+        rep = _pick_representative(members)
+        common = set.intersection(*(m["words"] for m in members))
 
-    # Sort by relevance score (not just raw count)
+        relevance = _compute_relevance(
+            len(members), len(projects), len(clients), primary_category
+        )
+
+        # Unique example texts (deduplicated, up to 5)
+        seen_texts = set()
+        examples = []
+        for m in members:
+            short = m["text"][:200]
+            if short not in seen_texts:
+                seen_texts.add(short)
+                examples.append(m["text"])
+                if len(examples) >= 5:
+                    break
+
+        themes.append({
+            "summary": _make_summary(rep["text"], common),
+            "occurrences": len(members),
+            "projects": sorted(projects),
+            "project_count": len(projects),
+            "clients": sorted(clients),
+            "client_count": len(clients),
+            "primary_category": primary_category,
+            "category_breakdown": dict(cats.most_common()),
+            "example_comments": examples,
+            "comment_ids": [m["id"] for m in members],
+            "relevance": relevance,
+        })
+
     themes.sort(key=lambda x: x["relevance"], reverse=True)
+    return themes[:30]
 
-    # Remove subset themes (e.g., if "figure resolution" and "resolution" both
-    # appear, keep the more specific one if it has similar count)
-    filtered = []
-    seen_terms = set()
-    for theme in themes:
-        words = set(theme["term"].split())
-        is_subset = False
-        for seen in seen_terms:
-            seen_words = set(seen.split())
-            if words.issubset(seen_words) and len(words) < len(seen_words):
-                is_subset = True
-                break
-        if not is_subset:
-            filtered.append(theme)
-            seen_terms.add(theme["term"])
 
-    conn.close()
-    return filtered[:50]  # Top 50 themes
+# Keep extract_terms for backward compat with tests, but simplified
+def extract_terms(text):
+    """Extract significant terms from text (for test compatibility)."""
+    words = _tokenize(text)
+    terms = set()
+    word_list = list(words)
+    for w in word_list:
+        if len(w) >= 6:
+            terms.add(w)
+    # Bigrams from original word order
+    text_lower = text.lower()
+    text_clean = re.sub(r'[^\w\s]', ' ', text_lower)
+    orig_words = [w for w in text_clean.split() if w not in _STOP_WORDS and len(w) >= 3]
+    for i in range(len(orig_words) - 1):
+        terms.add(f"{orig_words[i]} {orig_words[i + 1]}")
+    return terms

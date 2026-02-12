@@ -11,7 +11,7 @@ def get_client_stats(client_name, db_path=None):
     projects = conn.execute(
         """SELECT p.*,
                   COUNT(DISTINCT b.id) as rev_count,
-                  COUNT(c.id) as total_comments
+                  COUNT(CASE WHEN c.excluded = 0 THEN 1 END) as total_comments
            FROM projects p
            LEFT JOIN batches b ON b.project_id = p.id
            LEFT JOIN comments c ON c.batch_id = b.id
@@ -87,7 +87,7 @@ def get_all_clients_summary(db_path=None):
         """SELECT p.client,
                   COUNT(DISTINCT p.id) as project_count,
                   COUNT(DISTINCT b.id) as batch_count,
-                  COUNT(c.id) as total_comments
+                  COUNT(CASE WHEN c.excluded = 0 THEN 1 END) as total_comments
            FROM projects p
            LEFT JOIN batches b ON b.project_id = p.id
            LEFT JOIN comments c ON c.batch_id = b.id

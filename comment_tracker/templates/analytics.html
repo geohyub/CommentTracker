@@ -19,8 +19,16 @@
         <div class="card h-100">
             <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>전체 카테고리 분포</div>
             <div class="card-body">
-                <div class="chart-container" style="height: 300px;">
+                <div class="chart-container" style="height: 220px;">
                     <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for cat in distribution.by_category %}
+                    <a href="{{ url_for('comments_page', category=cat.category) }}" class="d-flex align-items-center justify-content-between text-decoration-none py-1 px-2 rounded mb-1" style="color: inherit;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''">
+                        <span><span class="badge-category">{{ cat.category }}</span></span>
+                        <span class="small text-muted">{{ cat.count }}건 ({{ cat.percentage }}%)</span>
+                    </a>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -94,41 +102,42 @@
     </div>
 </div>
 
-<!-- Recurring Themes -->
+<!-- Recurring Issues (Clustered) -->
 {% if themes %}
 <div class="card mb-4">
-    <div class="card-header"><i class="bi bi-arrow-repeat me-2"></i>반복 테마</div>
+    <div class="card-header"><i class="bi bi-arrow-repeat me-2"></i>반복 이슈 (유사 코멘트 그룹)</div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>테마</th>
-                        <th>발생횟수</th>
-                        <th>관련성</th>
-                        <th>프로젝트</th>
-                        <th>클라이언트</th>
-                        <th>카테고리</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in themes[:15] %}
-                    <tr>
-                        <td class="fw-500">{{ t.term }}</td>
-                        <td><span class="badge bg-primary">{{ t.occurrences }}</span></td>
-                        <td>
-                            {% if t.relevance is defined %}
-                            <span class="badge bg-{{ 'success' if t.relevance >= 40 else 'warning text-dark' if t.relevance >= 20 else 'secondary' }}">{{ t.relevance }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ t.projects | join(', ') }}</td>
-                        <td>{{ t.clients | join(', ') }}</td>
-                        <td><span class="badge-category">{{ t.primary_category }}</span></td>
-                    </tr>
+        {% for t in themes[:10] %}
+        <div class="p-3 {{ 'border-bottom' if not loop.last }}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="flex-grow-1 me-3">
+                    <div class="fw-500 mb-1" style="line-height: 1.5;">{{ t.summary }}</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge-category">{{ t.primary_category }}</span>
+                        {% for p in t.projects %}
+                        <span class="badge bg-light text-dark">{{ p }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 text-nowrap">
+                    <span class="badge bg-primary">{{ t.occurrences }}건</span>
+                    <span class="badge bg-{{ 'success' if t.project_count >= 3 else 'warning text-dark' }}">{{ t.project_count }}개 프로젝트</span>
+                </div>
+            </div>
+            {% if t.example_comments|length > 1 %}
+            <details class="mt-2">
+                <summary class="small text-muted" style="cursor:pointer">유사 코멘트 {{ t.occurrences }}건 보기</summary>
+                <div class="mt-2">
+                    {% for ex in t.example_comments[:3] %}
+                    <div class="small text-muted p-2 mb-1" style="background:#f8fafc; border-radius:4px; border-left:3px solid var(--accent-primary);">
+                        {{ ex[:200] }}{{ '...' if ex|length > 200 }}
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
+                </div>
+            </details>
+            {% endif %}
         </div>
+        {% endfor %}
     </div>
 </div>
 {% endif %}

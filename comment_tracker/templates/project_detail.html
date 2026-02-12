@@ -62,8 +62,16 @@
         <div class="card h-100">
             <div class="card-header"><i class="bi bi-pie-chart-fill me-2"></i>카테고리 분석</div>
             <div class="card-body">
-                <div class="chart-container" style="height: 300px;">
+                <div class="chart-container" style="height: 200px;">
                     <canvas id="categoryChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for cat in distribution.by_category %}
+                    <a href="{{ url_for('comments_page', project=project.project_code, category=cat.category) }}" class="d-flex align-items-center justify-content-between text-decoration-none py-1 px-2 rounded mb-1" style="color: inherit;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background=''">
+                        <span><span class="badge-category">{{ cat.category }}</span></span>
+                        <span class="small text-muted">{{ cat.count }}건 ({{ cat.percentage }}%)</span>
+                    </a>
+                    {% endfor %}
                 </div>
             </div>
         </div>

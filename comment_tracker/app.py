@@ -176,14 +176,113 @@ def create_app(db_path=None):
         # Exclude self
         similar = [s for s in similar if s["id"] != comment_id]
 
+        # Prev/next navigation
+        adjacent = search.get_adjacent_comment_ids(comment_id, db_path=get_db())
+
         return render_template("comment_detail.html",
-                               comment=comment, similar=similar)
+                               comment=comment, similar=similar,
+                               prev_id=adjacent["prev_id"],
+                               next_id=adjacent["next_id"])
+
+    @app.route("/comment/<int:comment_id>/edit", methods=["POST"])
+    def comment_edit(comment_id):
+        updates = {}
+        for field in ["status", "assignee", "tags", "summary_ko"]:
+            val = request.form.get(field)
+            if val is not None:
+                updates[field] = val.strip() if val.strip() else None
+        if request.form.get("excluded") is not None:
+            updates["excluded"] = 1 if request.form.get("excluded") == "1" else 0
+            updates["exclude_reason"] = request.form.get("exclude_reason", "").strip() or None
+
+        if updates:
+            search.update_comment(comment_id, updates, db_path=get_db())
+            flash("코멘트가 수정되었습니다.", "success")
+        return redirect(request.referrer or url_for("comment_detail", comment_id=comment_id))
+
+    @app.route("/comments/bulk", methods=["POST"])
+    def comments_bulk():
+        ids = request.form.getlist("comment_ids")
+        action = request.form.get("action")
+        value = request.form.get("value", "").strip()
+
+        if not ids or not action:
+            flash("선택된 코멘트가 없습니다.", "error")
+            return redirect(request.referrer or url_for("comments_page"))
+
+        count = 0
+        for cid in ids:
+            try:
+                updates = {}
+                if action == "status" and value:
+                    updates["status"] = value
+                elif action == "assignee":
+                    updates["assignee"] = value if value else None
+                elif action == "exclude":
+                    updates["excluded"] = 1
+                    updates["exclude_reason"] = value or "Bulk excluded"
+                elif action == "include":
+                    updates["excluded"] = 0
+                    updates["exclude_reason"] = None
+
+                if updates:
+                    search.update_comment(int(cid), updates, db_path=get_db())
+                    count += 1
+            except (ValueError, TypeError):
+                continue
+
+        flash(f"{count}건 코멘트가 일괄 수정되었습니다.", "success")
+        return redirect(request.referrer or url_for("comments_page"))
+
+    # ─── My Work ───────────────────────────────────────────────
+    @app.route("/my-work")
+    def my_work():
+        assignee = request.args.get("assignee", "")
+        options = search.get_filter_options(get_db())
+
+        work = {}
+        if assignee:
+            # Open (assigned) comments
+            open_comments, open_total = search.list_comments(
+                filters={"assignee": assignee, "status": "Noted"},
+                limit=100, db_path=get_db()
+            )
+            accepted_comments, accepted_total = search.list_comments(
+                filters={"assignee": assignee, "status": "Accepted"},
+                limit=100, db_path=get_db()
+            )
+            modified_comments, modified_total = search.list_comments(
+                filters={"assignee": assignee, "status": "Accepted (modified)"},
+                limit=100, db_path=get_db()
+            )
+            rejected_comments, rejected_total = search.list_comments(
+                filters={"assignee": assignee, "status": "Rejected"},
+                limit=100, db_path=get_db()
+            )
+            all_comments, all_total = search.list_comments(
+                filters={"assignee": assignee},
+                limit=200, db_path=get_db()
+            )
+
+            work = {
+                "assignee": assignee,
+                "total": all_total,
+                "open": open_total + rejected_total,
+                "closed": accepted_total + modified_total,
+                "comments": all_comments,
+            }
+
+        return render_template("my_work.html", work=work, options=options,
+                               current_assignee=assignee)
 
     # ─── Search ─────────────────────────────────────────────────
     @app.route("/search")
     def search_page():
         query = request.args.get("q", "").strip()
+        page = request.args.get("page", 1, type=int)
+        per_page = 20
         results = []
+        total = 0
         if query:
             filters = {}
             for key in ["client", "project", "category", "status", "comment_type"]:
@@ -191,16 +290,19 @@ def create_app(db_path=None):
                 if val:
                     filters[key] = val
             try:
-                results = search.full_text_search(
+                results, total = search.full_text_search(
                     query, filters=filters if filters else None,
+                    limit=per_page, offset=(page - 1) * per_page,
                     db_path=get_db()
                 )
             except Exception:
                 flash("Search query error. Try simpler terms.", "warning")
 
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
         options = search.get_filter_options(get_db())
         return render_template("search.html",
-                               query=query, results=results, options=options)
+                               query=query, results=results, options=options,
+                               total=total, page=page, total_pages=total_pages)
 
     @app.route("/similar")
     def similar_page():
@@ -348,6 +450,39 @@ def create_app(db_path=None):
         fmt = request.args.get("format", "json")
         if fmt == "json":
             return jsonify(comments)
+        elif fmt == "excel":
+            if not comments:
+                flash("내보낼 데이터가 없습니다.", "warning")
+                return redirect(request.referrer or url_for("comments_page"))
+            import openpyxl
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Comments"
+            headers = ["ID", "Project", "Revision", "Comment Type", "Category",
+                        "Status", "Comment", "Response", "Assignee", "Section",
+                        "Tags", "Summary (KO)", "Received Date"]
+            ws.append(headers)
+            for c in comments:
+                ws.append([
+                    c.get("id"), c.get("project_code"), c.get("revision"),
+                    c.get("comment_type"), c.get("category"), c.get("status"),
+                    c.get("comment_text"), c.get("response_text"),
+                    c.get("assignee"), c.get("section"), c.get("tags"),
+                    c.get("summary_ko"), c.get("received_date"),
+                ])
+            for col in ws.columns:
+                ws.column_dimensions[col[0].column_letter].width = 15
+            ws.column_dimensions["G"].width = 50
+            ws.column_dimensions["H"].width = 40
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            return send_file(
+                output,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                as_attachment=True,
+                download_name=f"comments_export_{datetime.now().strftime('%Y%m%d')}.xlsx"
+            )
         else:
             # CSV
             if not comments:

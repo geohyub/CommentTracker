@@ -36,7 +36,7 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
             FROM comments c
             JOIN batches b ON c.batch_id = b.id
             JOIN projects p ON b.project_id = p.id
-            WHERE c.assignee = ? {date_filter}
+            WHERE c.assignee = ? AND c.excluded = 0 {date_filter}
             GROUP BY p.id
             ORDER BY p.project_code""",
         params
@@ -62,7 +62,7 @@ def get_bsc_report(assignee, year=None, date_from=None, date_to=None, db_path=No
             FROM comments c
             JOIN batches b ON c.batch_id = b.id
             JOIN projects p ON b.project_id = p.id
-            WHERE c.assignee = ? {date_filter}
+            WHERE c.assignee = ? AND c.excluded = 0 {date_filter}
             GROUP BY c.category
             ORDER BY count DESC""",
         params

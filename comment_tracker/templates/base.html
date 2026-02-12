@@ -45,6 +45,9 @@
             <li class="nav-item {{ 'active' if request.endpoint == 'similar_page' }}">
                 <a href="{{ url_for('similar_page') }}"><i class="bi bi-intersect"></i> 유사 코멘트</a>
             </li>
+            <li class="nav-item {{ 'active' if request.endpoint == 'my_work' }}">
+                <a href="{{ url_for('my_work') }}"><i class="bi bi-person-workspace"></i> 내 작업</a>
+            </li>
             <li class="nav-category">분석</li>
             <li class="nav-item {{ 'active' if request.endpoint == 'analytics_page' }}">
                 <a href="{{ url_for('analytics_page') }}"><i class="bi bi-bar-chart-fill"></i> 통계 분석</a>

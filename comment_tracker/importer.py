@@ -3,8 +3,11 @@
 import csv
 import io
 import json
+import re
 from .db import get_connection
 from .models import Comment, VALID_SEVERITIES, VALID_CATEGORIES, VALID_STATUSES, VALID_CONFIDENCES
+
+_DATE_PATTERN = re.compile(r"^\d{4}-\d{2}(-\d{2})?$")
 
 
 class ImportError(Exception):
@@ -148,6 +151,13 @@ def import_data(project_data, batch_data, comments_data, db_path=None, update=Fa
             # Delete existing comments and batch
             conn.execute("DELETE FROM comments WHERE batch_id = ?", (existing_batch["id"],))
             conn.execute("DELETE FROM batches WHERE id = ?", (existing_batch["id"],))
+
+        # Validate date format
+        received_date = batch_data.get("received_date")
+        if received_date and not _DATE_PATTERN.match(received_date):
+            raise ImportError(
+                f"날짜 형식 오류: '{received_date}'. YYYY-MM 또는 YYYY-MM-DD 형식을 사용하세요."
+            )
 
         # Insert batch
         cursor = conn.execute(

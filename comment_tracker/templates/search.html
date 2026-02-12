@@ -44,7 +44,7 @@
 </div>
 
 {% if query %}
-<p class="text-muted mb-3">{{ results|length }}건의 검색 결과: "<strong>{{ query }}</strong>"</p>
+<p class="text-muted mb-3">{{ total }}건의 검색 결과: "<strong>{{ query }}</strong>"</p>
 
 {% if results %}
 {% for r in results %}
@@ -76,6 +76,32 @@
     </div>
 </div>
 {% endfor %}
+
+<!-- Search Pagination -->
+{% if total_pages > 1 %}
+<div class="d-flex justify-content-center py-3">
+    <nav>
+        <ul class="pagination mb-0">
+            {% if page > 1 %}
+            <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ page - 1 }}{% for k, v in request.args.items() if k not in ('q', 'page') %}&{{ k }}={{ v }}{% endfor %}">&laquo;</a></li>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+            {% if p == page or (p >= page - 2 and p <= page + 2) or p == 1 or p == total_pages %}
+            <li class="page-item {{ 'active' if p == page }}">
+                <a class="page-link" href="?q={{ query }}&page={{ p }}{% for k, v in request.args.items() if k not in ('q', 'page') %}&{{ k }}={{ v }}{% endfor %}">{{ p }}</a>
+            </li>
+            {% elif p == page - 3 or p == page + 3 %}
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+            {% endfor %}
+            {% if page < total_pages %}
+            <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ page + 1 }}{% for k, v in request.args.items() if k not in ('q', 'page') %}&{{ k }}={{ v }}{% endfor %}">&raquo;</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endif %}
+
 {% else %}
 <div class="card">
     <div class="card-body">

@@ -131,7 +131,7 @@ def get_project_stats(project_code, db_path=None):
         """SELECT c.status, COUNT(*) as count
            FROM comments c
            JOIN batches b ON c.batch_id = b.id
-           WHERE b.project_id = ?
+           WHERE b.project_id = ? AND c.excluded = 0
            GROUP BY c.status
            ORDER BY count DESC""",
         (pid,)
@@ -148,7 +148,7 @@ def get_all_projects_summary(db_path=None, sort_by="date"):
     projects = conn.execute(
         """SELECT p.*,
                   COUNT(DISTINCT b.id) as batch_count,
-                  COUNT(c.id) as total_comments,
+                  COUNT(CASE WHEN c.excluded = 0 THEN 1 END) as total_comments,
                   MAX(b.received_date) as latest_date
            FROM projects p
            LEFT JOIN batches b ON b.project_id = p.id
@@ -189,7 +189,7 @@ def get_all_projects_summary(db_path=None, sort_by="date"):
             """SELECT c.status, COUNT(*) as cnt
                FROM comments c
                JOIN batches b ON c.batch_id = b.id
-               WHERE b.project_id = ?
+               WHERE b.project_id = ? AND c.excluded = 0
                GROUP BY c.status""",
             (pd["id"],)
         ).fetchall()

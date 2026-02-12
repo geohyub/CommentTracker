@@ -69,6 +69,16 @@ CREATE TABLE IF NOT EXISTS ll_flags (
     flagged_by TEXT DEFAULT 'system'
 );
 
+-- Audit log for tracking changes
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    comment_id INTEGER REFERENCES comments(id),
+    field TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    changed_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Full-text search virtual table
 CREATE VIRTUAL TABLE IF NOT EXISTS comments_fts USING fts5(
     comment_text,

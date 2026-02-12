@@ -44,11 +44,17 @@ def _add_common_filters(sql, count_sql, params, filters):
             count_sql += clause
         params.append(filters["status"])
     if filters.get("assignee"):
-        clause = " AND c.assignee = ?"
-        sql += clause
-        if count_sql:
-            count_sql += clause
-        params.append(filters["assignee"])
+        if filters["assignee"] == "__unassigned__":
+            clause = " AND (c.assignee IS NULL OR c.assignee = '')"
+            sql += clause
+            if count_sql:
+                count_sql += clause
+        else:
+            clause = " AND c.assignee = ?"
+            sql += clause
+            if count_sql:
+                count_sql += clause
+            params.append(filters["assignee"])
     if filters.get("excluded") is not None:
         clause = " AND c.excluded = ?"
         sql += clause
@@ -70,15 +76,15 @@ def _add_common_filters(sql, count_sql, params, filters):
     return sql, count_sql, params
 
 
-def full_text_search(query, filters=None, limit=50, db_path=None):
-    """Search comments using FTS5 full-text search with optional filters."""
+def full_text_search(query, filters=None, limit=50, offset=0, db_path=None):
+    """Search comments using FTS5 full-text search with optional filters.
+
+    Returns (results_list, total_count).
+    """
     conn = get_connection(db_path)
     fts_query = " OR ".join(w for w in query.split() if w.strip())
 
-    sql = """
-        SELECT c.*, b.comment_type, b.revision, b.received_date, b.reviewer,
-               p.project_code, p.project_name, p.client, p.report_type,
-               rank
+    base_sql = """
         FROM comments_fts fts
         JOIN comments c ON fts.rowid = c.id
         JOIN batches b ON c.batch_id = b.id
@@ -86,15 +92,22 @@ def full_text_search(query, filters=None, limit=50, db_path=None):
         WHERE comments_fts MATCH ?
     """
     params = [fts_query]
-    sql, _, params = _add_common_filters(sql, None, params, filters)
+    count_sql = "SELECT COUNT(*) " + base_sql
+    base_sql, count_sql, params = _add_common_filters(base_sql, count_sql, params, filters)
 
-    sql += " ORDER BY rank LIMIT ?"
-    params.append(limit)
+    total = conn.execute(count_sql, params).fetchone()[0]
+
+    sql = """
+        SELECT c.*, b.comment_type, b.revision, b.received_date, b.reviewer,
+               p.project_code, p.project_name, p.client, p.report_type,
+               rank
+    """ + base_sql + " ORDER BY rank LIMIT ? OFFSET ?"
+    params.extend([limit, offset])
 
     rows = conn.execute(sql, params).fetchall()
     results = [dict(r) for r in rows]
     conn.close()
-    return results
+    return results, total
 
 
 def find_similar(text, limit=10, db_path=None):
@@ -199,8 +212,63 @@ def get_comment_detail(comment_id, db_path=None):
     ).fetchall()
     result["ll_flags"] = [dict(r) for r in ll_rows]
 
+    # Audit log
+    audit_rows = conn.execute(
+        "SELECT * FROM audit_log WHERE comment_id = ? ORDER BY changed_at DESC LIMIT 20",
+        (comment_id,)
+    ).fetchall()
+    result["audit_log"] = [dict(r) for r in audit_rows]
+
     conn.close()
     return result
+
+
+def update_comment(comment_id, updates, db_path=None):
+    """Update specific fields of a comment. Only allows safe fields. Logs changes to audit_log."""
+    ALLOWED = {"status", "assignee", "tags", "summary_ko", "excluded", "exclude_reason"}
+    conn = get_connection(db_path)
+    fields = {k: v for k, v in updates.items() if k in ALLOWED}
+    if not fields:
+        conn.close()
+        return False
+
+    # Get current values for audit logging
+    current = conn.execute("SELECT * FROM comments WHERE id = ?", (comment_id,)).fetchone()
+    if current:
+        for field, new_val in fields.items():
+            old_val = current[field]
+            old_str = str(old_val) if old_val is not None else None
+            new_str = str(new_val) if new_val is not None else None
+            if old_str != new_str:
+                conn.execute(
+                    "INSERT INTO audit_log (comment_id, field, old_value, new_value) VALUES (?, ?, ?, ?)",
+                    (comment_id, field, old_str, new_str)
+                )
+
+    set_clause = ", ".join(f"{k} = ?" for k in fields)
+    params = list(fields.values()) + [comment_id]
+    conn.execute(f"UPDATE comments SET {set_clause} WHERE id = ?", params)
+    conn.commit()
+    conn.close()
+    return True
+
+
+def get_adjacent_comment_ids(comment_id, db_path=None):
+    """Get previous and next comment IDs for navigation."""
+    conn = get_connection(db_path)
+    prev_row = conn.execute(
+        "SELECT id FROM comments WHERE id < ? ORDER BY id DESC LIMIT 1",
+        (comment_id,)
+    ).fetchone()
+    next_row = conn.execute(
+        "SELECT id FROM comments WHERE id > ? ORDER BY id ASC LIMIT 1",
+        (comment_id,)
+    ).fetchone()
+    conn.close()
+    return {
+        "prev_id": prev_row[0] if prev_row else None,
+        "next_id": next_row[0] if next_row else None,
+    }
 
 
 def get_filter_options(db_path=None):

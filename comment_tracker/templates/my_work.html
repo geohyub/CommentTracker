@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}내 작업 - Comment Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="bi bi-person-workspace me-2"></i>내 작업</h1>
+    <p class="subtitle">담당자별 코멘트 현황</p>
+</div>
+
+<!-- Assignee Selector -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">담당자</label>
+                <select class="form-select form-select-sm" name="assignee" onchange="this.form.submit()">
+                    <option value="">담당자 선택...</option>
+                    {% for a in options.assignees %}
+                    <option value="{{ a }}" {{ 'selected' if current_assignee == a }}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-auto">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>조회</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if work and work.assignee %}
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">전체 코멘트</div>
+            <div class="stat-value">{{ work.total }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">미처리 (Open)</div>
+            <div class="stat-value" style="color: var(--warning);">{{ work.open }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">처리 완료 (Closed)</div>
+            <div class="stat-value" style="color: var(--success);">{{ work.closed }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-label">처리율</div>
+            <div class="stat-value">
+                {% if work.total > 0 %}
+                {{ ((work.closed / work.total) * 100) | round(0) | int }}%
+                {% else %}
+                N/A
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comments Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-check me-2"></i>{{ work.assignee }} 담당 코멘트</span>
+        <span class="badge bg-primary">{{ work.total }}건</span>
+    </div>
+    <div class="card-body p-0">
+        {% if work.comments %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>프로젝트</th>
+                        <th>리비전</th>
+                        <th>코멘트</th>
+                        <th>종류</th>
+                        <th>카테고리</th>
+                        <th>상태</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in work.comments %}
+                    <tr>
+                        <td><a href="{{ url_for('comment_detail', comment_id=c.id) }}" class="text-decoration-none fw-500">{{ c.id }}</a></td>
+                        <td><span class="text-nowrap">{{ c.project_code }}</span></td>
+                        <td>{{ c.revision }}</td>
+                        <td class="comment-text">
+                            <div class="comment-preview" onclick="toggleExpand(this)">
+                                {{ c.comment_text }}
+                            </div>
+                            {% if c.summary_ko %}
+                            <div class="summary-ko">{{ c.summary_ko }}</div>
+                            {% endif %}
+                        </td>
+                        <td><span class="text-nowrap">{{ LABELS_KO.get(c.comment_type, c.comment_type) or '-' }}</span></td>
+                        <td><span class="badge-category">{{ c.category }}</span></td>
+                        <td>
+                            <span class="badge-status badge-{{ 'accepted' if c.status == 'Accepted' else 'modified' if 'modified' in c.status else 'noted' if c.status == 'Noted' else 'rejected' }}">
+                                {{ LABELS_KO.get(c.status, c.status) }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-check-circle"></i>
+            <h5>코멘트가 없습니다</h5>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% elif not current_assignee %}
+<div class="empty-state">
+    <i class="bi bi-person-workspace"></i>
+    <h5>담당자를 선택하세요</h5>
+    <p>위 드롭다운에서 담당자를 선택하면 해당 담당자의 코멘트 현황을 확인할 수 있습니다.</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleExpand(el) {
+    el.classList.toggle('expanded');
+}
+</script>
+{% endblock %}

@@ -2,14 +2,24 @@
 {% block title %}코멘트 #{{ comment.id }} - Comment Tracker{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb mb-1">
-            <li class="breadcrumb-item"><a href="{{ url_for('comments_page') }}">코멘트</a></li>
-            <li class="breadcrumb-item active">코멘트 #{{ comment.id }}</li>
-        </ol>
-    </nav>
-    <h1>코멘트 #{{ comment.id }}</h1>
+<div class="page-header d-flex justify-content-between align-items-start">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{{ url_for('comments_page') }}">코멘트</a></li>
+                <li class="breadcrumb-item active">코멘트 #{{ comment.id }}</li>
+            </ol>
+        </nav>
+        <h1>코멘트 #{{ comment.id }}</h1>
+    </div>
+    <div class="d-flex gap-2">
+        {% if prev_id %}
+        <a href="{{ url_for('comment_detail', comment_id=prev_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-chevron-left me-1"></i>이전</a>
+        {% endif %}
+        {% if next_id %}
+        <a href="{{ url_for('comment_detail', comment_id=next_id) }}" class="btn btn-outline-secondary btn-sm">다음<i class="bi bi-chevron-right ms-1"></i></a>
+        {% endif %}
+    </div>
 </div>
 
 <div class="row g-4">
@@ -65,6 +75,37 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Audit Log -->
+        {% if comment.audit_log %}
+        <div class="card">
+            <div class="card-header"><i class="bi bi-clock-history me-2"></i>변경 이력</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>시간</th>
+                                <th>필드</th>
+                                <th>이전</th>
+                                <th>변경</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in comment.audit_log %}
+                            <tr>
+                                <td class="text-nowrap small text-muted">{{ log.changed_at }}</td>
+                                <td class="small">{{ log.field }}</td>
+                                <td class="small text-muted">{{ log.old_value or '-' }}</td>
+                                <td class="small fw-500">{{ log.new_value or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 
     <div class="col-xl-4">
@@ -111,6 +152,46 @@
             </div>
         </div>
 
+        <!-- Edit Form -->
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-pencil-square me-2"></i>코멘트 수정</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('comment_edit', comment_id=comment.id) }}">
+                    <div class="mb-2">
+                        <label class="form-label small text-muted">상태</label>
+                        <select class="form-select form-select-sm" name="status">
+                            {% for s in ['Accepted', 'Accepted (modified)', 'Noted', 'Rejected'] %}
+                            <option value="{{ s }}" {{ 'selected' if comment.status == s }}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small text-muted">담당자</label>
+                        <input type="text" class="form-control form-control-sm" name="assignee" value="{{ comment.assignee or '' }}" placeholder="담당자명">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small text-muted">태그</label>
+                        <input type="text" class="form-control form-control-sm" name="tags" value="{{ comment.tags or '' }}" placeholder="쉼표로 구분">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small text-muted">한글 요약</label>
+                        <textarea class="form-control form-control-sm" name="summary_ko" rows="2" placeholder="한글 요약 입력">{{ comment.summary_ko or '' }}</textarea>
+                    </div>
+                    <div class="mb-2">
+                        <div class="form-check">
+                            <input type="hidden" name="excluded" value="0">
+                            <input class="form-check-input" type="checkbox" name="excluded" value="1" id="excludedCheck" {{ 'checked' if comment.excluded }}>
+                            <label class="form-check-label small" for="excludedCheck">통계에서 제외</label>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="excludeReasonGroup" style="{{ '' if comment.excluded else 'display:none;' }}">
+                        <input type="text" class="form-control form-control-sm" name="exclude_reason" value="{{ comment.exclude_reason or '' }}" placeholder="제외 사유">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-check-lg me-1"></i>저장</button>
+                </form>
+            </div>
+        </div>
+
         <!-- L&L Flag -->
         <div class="card">
             <div class="card-header"><i class="bi bi-lightbulb-fill me-2"></i>Lessons & Learned</div>
@@ -151,4 +232,12 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('excludedCheck').addEventListener('change', function() {
+    document.getElementById('excludeReasonGroup').style.display = this.checked ? '' : 'none';
+});
+</script>
 {% endblock %}
