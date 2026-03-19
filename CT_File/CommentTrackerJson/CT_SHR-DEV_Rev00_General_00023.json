@@ -1,0 +1,34 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00023_Management Change Procedure_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "Document is oriented internally to Geoview internal process. However, for major changes, Client shall be informed and shall approve the modifications. Dedicated section to be added and associated template for the MOC to be revised to take this point into account.",
+      "summary_ko": "Document is oriented internally to Geoview internal process 기술적 확인/수정 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "Processing",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00016_Data Processing Procedure_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "4.1, p.12",
+      "comment_text": "As previously discussed, the coordinate system to use is the Korea 2002.",
+      "summary_ko": "As previously discussed 기술적 확인/수정 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "This document is gerneral",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01,coordinate system"
+    },
+    {
+      "comment_number": 2,
+      "section": "4.4, p.12",
+      "comment_text": "Please confirm SBP is processed as full waveform",
+      "summary_ko": "confirm SBP is processed as full waveform 명확화 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Accepted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:02,seismic"
+    },
+    {
+      "comment_number": 3,
+      "section": "4.5, p.13",
+      "comment_text": "'Use inverse filtering for zero-phase data acquisition'\nPlease clarify 'acquisition'. The data should be acquired and processed in full wave form and put to zero phase",
+      "summary_ko": "'Use inverse filtering for zero-phase data acquisition' 기술적 확인/수정 필요.",
+      "severity": "Major",
+      "category": "Technical",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:03"
+    }
+  ]
+}

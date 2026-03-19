@@ -1,0 +1,94 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00021_Inspection Test Plan (ITP)_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "Please amend ITP with following inspection points for Client : W for all points except for section 4 which is a R and step 1 which is a H point\n\nAdd a step for the provision of final as built documentation (R for Client)",
+      "summary_ko": "amend ITP with following inspection points for Client : W for all points except ... 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:01"
+    },
+    {
+      "comment_number": 2,
+      "section": "",
+      "comment_text": "Definitions of H / W / R to be reviewed. For W points, Geowview does not need to wait for Client, Geoview shall inform in writing the Client. For H point, Geoview shall notify and not proceed to the next step if no confirmation has been provided by Client",
+      "summary_ko": "Definitions of H / W / R to be reviewed 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:02"
+    },
+    {
+      "comment_number": 3,
+      "section": "",
+      "comment_text": "In column \"acceptance standard\", put the correct identification of project document / specification.",
+      "summary_ko": "In column \"acceptance standard\" 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:03"
+    },
+    {
+      "comment_number": 4,
+      "section": "",
+      "comment_text": "Inspection points related to Geoview are missing. To be added in the next revision of document",
+      "summary_ko": "Inspection points related to Geoview are missing 누락. 추가 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:04"
+    },
+    {
+      "comment_number": 5,
+      "section": "",
+      "comment_text": "Please confirm that elements of section 4-Equipment Operations are checked by a certified third party for load testing.",
+      "summary_ko": "confirm that elements of section 4-Equipment Operations are checked by a certifi... 명확화 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Noted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "Medium",
+      "tags": "ref:05,equipment"
+    }
+  ]
+}

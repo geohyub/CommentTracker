@@ -1,0 +1,34 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "Operation",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00026_HAZID WORKSHOP_Comment sheet.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "p.Cover page",
+      "comment_text": "Please add the Project cover page with the Employer reference number\n26/09/2025 : This comment can be closed.",
+      "summary_ko": "add the Project cover page with the Employer reference number 추가/제공 필요.",
+      "severity": "Minor",
+      "category": "Format",
+      "status": "Accepted",
+      "response_text": "Cover paged has been added and uploaed.",
+      "assignee": "KJH",
+      "excluded": false,
+      "exclude_reason": null,
+      "confidence": "High",
+      "tags": "ref:01"
+    }
+  ]
+}

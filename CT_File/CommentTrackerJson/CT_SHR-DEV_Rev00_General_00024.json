@@ -1,0 +1,34 @@
+{
+  "project": {
+    "project_code": "SHR-DEV",
+    "project_name": "Seahorse Offshore Wind Farm GP Survey",
+    "client": "EDF",
+    "report_type": "Other",
+    "survey_type": "OWF"
+  },
+  "batch": {
+    "revision": "Rev00",
+    "comment_type": "General",
+    "reviewer": "EDF",
+    "received_date": "2025-09-15",
+    "assignee": "KJH",
+    "source_file": "SHR-DEV-GP1-GVW-00024_Calibration checklist_COMMENTSHEET.xlsx"
+  },
+  "comments": [
+    {
+      "comment_number": 1,
+      "section": "",
+      "comment_text": "No comment for me",
+      "summary_ko": "No comment for me 검토 및 수정 필요.",
+      "severity": "Minor",
+      "category": "Readability",
+      "status": "Accepted",
+      "response_text": "",
+      "assignee": "KJH",
+      "excluded": true,
+      "exclude_reason": "Positive feedback / no comment",
+      "confidence": "High",
+      "tags": "ref:01"
+    }
+  ]
+}
